@@ -1,10 +1,11 @@
-import os
 import json
+import os
+
+import joblib
 import numpy as np
+import pandas as pd
 import torch
 import torch.nn as nn
-import joblib
-import pandas as pd
 
 
 # ==========================================
@@ -119,10 +120,10 @@ def load_preprocessing_artifacts(base_path=MODEL_SAVE_PATH):
     scaler = joblib.load(os.path.join(base_path, 'scaler.pkl'))
     encoder = joblib.load(os.path.join(base_path, 'encoder.joblib'))
 
-    with open(os.path.join(base_path, 'feature_columns.json'), 'r', encoding='utf-8') as f:
+    with open(os.path.join(base_path, 'feature_columns.json'), encoding='utf-8') as f:
         feature_cols = json.load(f)
 
-    with open(os.path.join(base_path, 'encoding_cols.json'), 'r', encoding='utf-8') as f:
+    with open(os.path.join(base_path, 'encoding_cols.json'), encoding='utf-8') as f:
         encoding_cols = json.load(f)
 
     return scaler, encoder, feature_cols, encoding_cols
@@ -147,15 +148,15 @@ def preprocess_input(raw_df, scaler, encoder, feature_cols, encoding_cols):
     raw_df = pd.concat([raw_df.drop(columns=ohe_target_cols), encoded_df], axis=1)
 
     # 3. 피처 순서 정렬
-    X = raw_df[feature_cols]
+    x = raw_df[feature_cols]
 
     # 4. 스케일링
-    X_scaled = scaler.transform(X).astype(np.float32)
+    x_scaled = scaler.transform(x).astype(np.float32)
 
-    return X_scaled
+    return x_scaled
 
 
-def inference(X_scaled, model_save_path=MODEL_SAVE_PATH, input_dim=INPUT_DIM,
+def inference(x_scaled, model_save_path=MODEL_SAVE_PATH, input_dim=INPUT_DIM,
             n_splits=N_SPLITS, temperature=0.44):
     """
     가중 앙상블 추론 (Weighted Blending)
@@ -163,10 +164,10 @@ def inference(X_scaled, model_save_path=MODEL_SAVE_PATH, input_dim=INPUT_DIM,
     """
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    X_tensor = torch.from_numpy(X_scaled).float()
-    if X_tensor.ndim == 1:
-        X_tensor = X_tensor.unsqueeze(0)
-    X_tensor = X_tensor.to(device)
+    x_tensor = torch.from_numpy(x_scaled).float()
+    if x_tensor.ndim == 1:
+        x_tensor = x_tensor.unsqueeze(0)
+    x_tensor = x_tensor.to(device)
 
     # 아티팩트 로드
     valid_folds, f2_scores = [], []
@@ -188,7 +189,7 @@ def inference(X_scaled, model_save_path=MODEL_SAVE_PATH, input_dim=INPUT_DIM,
     weights = torch.nn.functional.softmax(f2_tensor / temperature, dim=0).numpy()
 
     # 앙상블 추론
-    total_probs = np.zeros((X_tensor.size(0), 4))
+    total_probs = np.zeros((x_tensor.size(0), 4))
     collected_thresholds = []
 
     model = Predictor(input_dim).to(device)
@@ -201,9 +202,9 @@ def inference(X_scaled, model_save_path=MODEL_SAVE_PATH, input_dim=INPUT_DIM,
             # [핵심] 해당 폴드의 가중치만 로드
             checkpoint = torch.load(path, map_location=device, weights_only=False)
             model.load_state_dict(checkpoint['state_dict'])
-            
+
             # 추론 및 가중치 적용
-            probs = torch.sigmoid(model(X_tensor)).cpu().numpy()
+            probs = torch.sigmoid(model(x_tensor)).cpu().numpy()
             total_probs += probs * weights[idx]
 
             # [수정] 임계값 리스트 곱셈 에러 방지 (np.array 변환)

@@ -35,5 +35,6 @@ TORTOISE_ORM = {
 
 
 def initialize_tortoise(app: FastAPI) -> None:
-    Tortoise.init_models(TORTOISE_APP_MODELS, "checkpoints")
+    if "aerich.models" in TORTOISE_APP_MODELS:
+        Tortoise.init_models(TORTOISE_APP_MODELS, "models")
     register_tortoise(app, config=TORTOISE_ORM)
