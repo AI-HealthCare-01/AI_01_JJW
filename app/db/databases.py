@@ -5,8 +5,8 @@ from tortoise.contrib.fastapi import register_tortoise
 from app.core import config
 
 TORTOISE_APP_MODELS = [
-    "aerich.models",
-    "app.models.users",
+    "aerich.checkpoints",
+    "app.checkpoints.users",
 ]
 
 TORTOISE_ORM = {
@@ -26,8 +26,8 @@ TORTOISE_ORM = {
         },
     },
     "apps": {
-        "models": {
-            "models": TORTOISE_APP_MODELS,
+        "checkpoints": {
+            "checkpoints": TORTOISE_APP_MODELS,
         },
     },
     "timezone": "Asia/Seoul",
@@ -35,5 +35,5 @@ TORTOISE_ORM = {
 
 
 def initialize_tortoise(app: FastAPI) -> None:
-    Tortoise.init_models(TORTOISE_APP_MODELS, "models")
+    Tortoise.init_models(TORTOISE_APP_MODELS, "checkpoints")
     register_tortoise(app, config=TORTOISE_ORM)

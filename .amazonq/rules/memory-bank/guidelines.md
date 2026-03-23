@@ -144,7 +144,7 @@ All database access through repository classes:
 ```python
 class UserRepository:
     def __init__(self):
-        self._model = User  # Private model reference
+        self._model = User  # Private checkpoints reference
     
     # Query methods
     async def get_user(self, user_id: int) -> User | None:
@@ -420,8 +420,8 @@ await user.save(update_fields=update_fields)
 from tortoise.contrib.fastapi import register_tortoise
 
 TORTOISE_APP_MODELS = [
-    "aerich.models",
-    "app.models.users",
+    "aerich.checkpoints",
+    "app.checkpoints.users",
 ]
 
 TORTOISE_ORM = {
@@ -433,14 +433,14 @@ TORTOISE_ORM = {
         },
     },
     "apps": {
-        "models": {
-            "models": TORTOISE_APP_MODELS,
+        "checkpoints": {
+            "checkpoints": TORTOISE_APP_MODELS,
         },
     },
 }
 
 def initialize_tortoise(app: FastAPI) -> None:
-    Tortoise.init_models(TORTOISE_APP_MODELS, "models")
+    Tortoise.init_models(TORTOISE_APP_MODELS, "checkpoints")
     register_tortoise(app, config=TORTOISE_ORM)
 ```
 

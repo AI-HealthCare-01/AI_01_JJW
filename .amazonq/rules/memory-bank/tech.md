@@ -179,7 +179,7 @@ uv run aerich init -t app.db.databases.TORTOISE_ORM
 # Initialize database
 uv run aerich init-db
 
-# Create migration after model changes
+# Create migration after checkpoints changes
 uv run aerich migrate --name "description_of_changes"
 
 # Apply migrations

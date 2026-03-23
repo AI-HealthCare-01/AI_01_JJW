@@ -13,7 +13,7 @@ from app.core import config
 from app.db.databases import TORTOISE_APP_MODELS
 
 TEST_BASE_URL = "http://test"
-TEST_DB_LABEL = "models"
+TEST_DB_LABEL = "checkpoints"
 TEST_DB_TZ = "Asia/Seoul"
 
 
