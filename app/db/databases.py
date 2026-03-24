@@ -1,39 +1,26 @@
-from fastapi import FastAPI
-from tortoise import Tortoise
-from tortoise.contrib.fastapi import register_tortoise
+import redis.asyncio as redis
+from app.core.config import config
 
-from app.core import config
-
-TORTOISE_APP_MODELS = [
-    "app.models",
-]
-
-TORTOISE_ORM = {
-    "connections": {
-        "default": {
-            "engine": "tortoise.backends.mysql",
-            "dialect": "asyncmy",
-            "credentials": {
-                "host": config.DB_HOST,
-                "port": config.DB_PORT,
-                "user": config.DB_USER,
-                "password": config.DB_PASSWORD,
-                "database": config.DB_NAME,
-                "connect_timeout": config.DB_CONNECT_TIMEOUT,
-                "maxsize": config.DB_CONNECTION_POOL_MAXSIZE,
-            },
-        },
-    },
-    "apps": {
-        "checkpoints": {
-            "checkpoints": TORTOISE_APP_MODELS,
-        },
-    },
-    "timezone": "Asia/Seoul",
-}
+# Redis 연결 풀
+redis_pool = None
 
 
-def initialize_tortoise(app: FastAPI) -> None:
-    if "aerich.models" in TORTOISE_APP_MODELS:
-        Tortoise.init_models(TORTOISE_APP_MODELS, "models")
-    register_tortoise(app, config=TORTOISE_ORM)
+async def get_redis() -> redis.Redis:
+    """Redis 연결 반환"""
+    global redis_pool
+    if redis_pool is None:
+        redis_pool = redis.ConnectionPool(
+            host=config.REDIS_HOST,
+            port=config.REDIS_PORT,
+            db=config.REDIS_DB,
+            decode_responses=True
+        )
+    return redis.Redis(connection_pool=redis_pool)
+
+
+async def close_redis():
+    """Redis 연결 종료"""
+    global redis_pool
+    if redis_pool:
+        await redis_pool.disconnect()
+        redis_pool = None

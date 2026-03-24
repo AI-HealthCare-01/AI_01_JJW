@@ -1,5 +1,7 @@
 import json
 import os
+import asyncio
+from typing import Dict, Any
 
 import joblib
 import numpy as np
@@ -7,9 +9,11 @@ import pandas as pd
 import torch
 import torch.nn as nn
 
+from schemas import HealthPredictionResult
+
 
 # ==========================================
-# 모델 아키텍처
+# 모델 아키텍처 (기존 코드 유지)
 # ==========================================
 class SEBlock(nn.Module):
     def __init__(self, dim, reduction=4):
@@ -93,144 +97,209 @@ class Predictor(nn.Module):
 
 
 # ==========================================
-# 추론 파이프라인
+# HealthPredictor 클래스
 # ==========================================
-DISEASE_NAMES = ["DJ8_dg", "DI1_dg", "DE1_dg", "DI2_dg"]
-MODEL_SAVE_PATH = "./checkpoints/"
-INPUT_DIM = 127
-N_SPLITS = 7
+class HealthPredictor:
+    def __init__(self):
+        self.model_save_path = os.path.join(os.path.dirname(__file__), "checkpoints")
+        self.input_dim = 127
+        self.n_splits = 7
+        self.disease_names = ["당뇨병", "고혈압", "심혈관질환", "뇌졸중"]
+        
+        # 전처리 객체들 로드
+        self.scaler, self.encoder, self.feature_cols, self.encoding_cols = self._load_preprocessing_artifacts()
+    
+    def _load_preprocessing_artifacts(self):
+        """학습 시 저장한 전처리 객체들을 로드"""
+        scaler = joblib.load(os.path.join(self.model_save_path, "scaler.pkl"))
+        encoder = joblib.load(os.path.join(self.model_save_path, "encoder.joblib"))
 
+        with open(os.path.join(self.model_save_path, "feature_columns.json"), encoding="utf-8") as f:
+            feature_cols = json.load(f)
 
-def load_preprocessing_artifacts(base_path=MODEL_SAVE_PATH):
-    """학습 시 저장한 전처리 객체들을 로드"""
-    scaler = joblib.load(os.path.join(base_path, "scaler.pkl"))
-    encoder = joblib.load(os.path.join(base_path, "encoder.joblib"))
+        with open(os.path.join(self.model_save_path, "encoding_cols.json"), encoding="utf-8") as f:
+            encoding_cols = json.load(f)
 
-    with open(os.path.join(base_path, "feature_columns.json"), encoding="utf-8") as f:
-        feature_cols = json.load(f)
+        return scaler, encoder, feature_cols, encoding_cols
+    
+    def _convert_survey_to_dataframe(self, survey_data: Dict[str, Any]) -> pd.DataFrame:
+        """설문 데이터를 모델 입력 형태로 변환"""
+        # 기본 매핑 (실제 모델 학습 시 사용된 컬럼명에 맞게 조정 필요)
+        df_data = {
+            'age': [survey_data['age']],
+            'gender': [1 if survey_data['gender'] == 'male' else 2],
+            'height': [survey_data['height']],
+            'weight': [survey_data['weight']],
+            'systolic_bp': [survey_data['systolic_bp']],
+            'diastolic_bp': [survey_data['diastolic_bp']],
+            'cholesterol': [survey_data['cholesterol']],
+            'glucose': [survey_data['glucose']],
+            'smoking': [2 if survey_data['smoking'] else 1],
+            'alcohol': [2 if survey_data['alcohol'] else 1],
+            'exercise': [survey_data['exercise']]
+        }
+        
+        # BMI 계산
+        height_m = survey_data['height'] / 100
+        bmi = survey_data['weight'] / (height_m ** 2)
+        df_data['bmi'] = [bmi]
+        
+        return pd.DataFrame(df_data)
+    
+    def _preprocess_input(self, raw_df):
+        """원본 DataFrame을 모델 입력 형태로 전처리"""
+        # 이진 컬럼 변환 (1→0, 2→1)
+        binary_cols = [col for col in raw_df.columns if set(raw_df[col].dropna().unique()) <= {1, 2}]
+        for col in binary_cols:
+            raw_df[col] = raw_df[col].replace({1: 0, 2: 1})
 
-    with open(os.path.join(base_path, "encoding_cols.json"), encoding="utf-8") as f:
-        encoding_cols = json.load(f)
+        # 원핫 인코딩 (학습된 encoder 사용)
+        ohe_target_cols = self.encoding_cols
+        if ohe_target_cols:
+            raw_df[ohe_target_cols] = raw_df[ohe_target_cols].astype(str)
+            encoded_array = self.encoder.transform(raw_df[ohe_target_cols])
+            encoded_col_names = self.encoder.get_feature_names_out(ohe_target_cols)
+            encoded_df = pd.DataFrame(encoded_array, columns=encoded_col_names, index=raw_df.index)
+            raw_df = pd.concat([raw_df.drop(columns=ohe_target_cols), encoded_df], axis=1)
 
-    return scaler, encoder, feature_cols, encoding_cols
+        # 피처 순서 정렬 (누락된 컬럼은 0으로 채움)
+        for col in self.feature_cols:
+            if col not in raw_df.columns:
+                raw_df[col] = 0
+        
+        x = raw_df[self.feature_cols]
 
+        # 스케일링
+        x_scaled = self.scaler.transform(x).astype(np.float32)
 
-def preprocess_input(raw_df, scaler, encoder, feature_cols, encoding_cols):
-    """
-    원본 DataFrame을 모델 입력 형태로 전처리.
-    raw_df: 원본 피처가 담긴 DataFrame (결측치 제거 및 이진 변환 완료 상태)
-    """
-    # 1. 이진 컬럼 변환 (1→0, 2→1)
-    binary_cols = [col for col in raw_df.columns if set(raw_df[col].dropna().unique()) <= {1, 2}]
-    for col in binary_cols:
-        raw_df[col] = raw_df[col].replace({1: 0, 2: 1})
+        return x_scaled
+    
+    def _inference(self, x_scaled, temperature=0.44):
+        """가중 앙상블 추론"""
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # 2. 원핫 인코딩 (학습된 encoder 사용)
-    ohe_target_cols = encoding_cols
-    raw_df[ohe_target_cols] = raw_df[ohe_target_cols].astype(str)
-    encoded_array = encoder.transform(raw_df[ohe_target_cols])
-    encoded_col_names = encoder.get_feature_names_out(ohe_target_cols)
-    encoded_df = pd.DataFrame(encoded_array, columns=encoded_col_names, index=raw_df.index)
-    raw_df = pd.concat([raw_df.drop(columns=ohe_target_cols), encoded_df], axis=1)
+        x_tensor = torch.from_numpy(x_scaled).float()
+        if x_tensor.ndim == 1:
+            x_tensor = x_tensor.unsqueeze(0)
+        x_tensor = x_tensor.to(device)
 
-    # 3. 피처 순서 정렬
-    x = raw_df[feature_cols]
+        # 아티팩트 로드
+        valid_folds, f2_scores = [], []
+        for fold in range(1, self.n_splits + 1):
+            path = os.path.join(self.model_save_path, f"fold{fold}_artifact.pth")
+            if not os.path.exists(path):
+                continue
+            cp_meta = torch.load(path, map_location=device, weights_only=False)
+            f2_scores.append(cp_meta["val_f2"])
+            valid_folds.append(fold)
+            del cp_meta
 
-    # 4. 스케일링
-    x_scaled = scaler.transform(x).astype(np.float32)
+        if not f2_scores:
+            raise ValueError("사용 가능한 폴드 아티팩트가 없습니다.")
 
-    return x_scaled
+        # 가중치 계산
+        f2_tensor = torch.tensor(f2_scores)
+        weights = torch.nn.functional.softmax(f2_tensor / temperature, dim=0).numpy()
 
+        # 앙상블 추론
+        total_probs = np.zeros((x_tensor.size(0), 4))
+        collected_thresholds = []
 
-def inference(x_scaled, model_save_path=MODEL_SAVE_PATH, input_dim=INPUT_DIM, n_splits=N_SPLITS, temperature=0.44):
-    """
-    가중 앙상블 추론 (Weighted Blending)
-    X_scaled: 전처리 완료된 numpy array (n_samples, 127)
-    """
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        model = Predictor(self.input_dim).to(device)
+        model.eval()
 
-    x_tensor = torch.from_numpy(x_scaled).float()
-    if x_tensor.ndim == 1:
-        x_tensor = x_tensor.unsqueeze(0)
-    x_tensor = x_tensor.to(device)
+        with torch.no_grad():
+            for idx, fold_num in enumerate(valid_folds):
+                path = os.path.join(self.model_save_path, f"fold{fold_num}_artifact.pth")
+                checkpoint = torch.load(path, map_location=device, weights_only=False)
+                model.load_state_dict(checkpoint["state_dict"])
 
-    # 아티팩트 로드
-    valid_folds, f2_scores = [], []
-    for fold in range(1, n_splits + 1):
-        path = os.path.join(model_save_path, f"fold{fold}_artifact.pth")
-        if not os.path.exists(path):
-            continue
-        # weights_only=True로 설정하여 메타데이터만 빠르게 로드 시도
-        cp_meta = torch.load(path, map_location=device, weights_only=False)
-        f2_scores.append(cp_meta["val_f2"])
-        valid_folds.append(fold)
-        del cp_meta  # 메타데이터 즉시 삭제
+                probs = torch.sigmoid(model(x_tensor)).cpu().numpy()
+                total_probs += probs * weights[idx]
 
-    if not f2_scores:
-        raise ValueError("사용 가능한 폴드 아티팩트가 없습니다.")
+                current_thresholds = np.array(checkpoint["thresholds"])
+                collected_thresholds.append(current_thresholds * weights[idx])
+                del checkpoint
 
-    # 가중치 계산
-    f2_tensor = torch.tensor(f2_scores)
-    weights = torch.nn.functional.softmax(f2_tensor / temperature, dim=0).numpy()
+        final_thresholds = np.sum(collected_thresholds, axis=0)
+        final_preds = (total_probs >= final_thresholds).astype(int)
 
-    # 앙상블 추론
-    total_probs = np.zeros((x_tensor.size(0), 4))
-    collected_thresholds = []
-
-    model = Predictor(input_dim).to(device)
-    model.eval()
-
-    with torch.no_grad():
-        for idx, fold_num in enumerate(valid_folds):
-            path = os.path.join(model_save_path, f"fold{fold_num}_artifact.pth")
-
-            # [핵심] 해당 폴드의 가중치만 로드
-            checkpoint = torch.load(path, map_location=device, weights_only=False)
-            model.load_state_dict(checkpoint["state_dict"])
-
-            # 추론 및 가중치 적용
-            probs = torch.sigmoid(model(x_tensor)).cpu().numpy()
-            total_probs += probs * weights[idx]
-
-            # [수정] 임계값 리스트 곱셈 에러 방지 (np.array 변환)
-            # collected_thresholds.append(checkpoint['thresholds'] * weights[idx])
-            current_thresholds = np.array(checkpoint["thresholds"])
-            collected_thresholds.append(current_thresholds * weights[idx])
-
-            # [핵심] 사용이 끝난 체크포인트 명시적 삭제로 메모리 확보
-            del checkpoint
-
-    final_thresholds = np.sum(collected_thresholds, axis=0)
-    final_preds = (total_probs >= final_thresholds).astype(int)
-
-    return {
-        "predictions": final_preds,
-        "probabilities": total_probs,
-        "thresholds_used": final_thresholds,
-        "disease_names": DISEASE_NAMES,
-        "weights_applied": weights,
-    }
-
-
-# ==========================================
-# 실행 예시
-# ==========================================
-if __name__ == "__main__":
-    # 1. 전처리 객체 로드
-    scaler, encoder, feature_cols, encoding_cols = load_preprocessing_artifacts()
-
-    # 2. 입력 데이터 준비 (예시: 이미 스케일링된 랜덤 데이터)
-    # 실제 사용 시에는 preprocess_input()을 통해 원본 DataFrame을 전처리하세요.
-    sample_input = np.random.randn(1, INPUT_DIM).astype(np.float32)
-
-    # 3. 추론
-    result = inference(sample_input)
-
-    # 4. 결과 출력
-    print("=== 만성질환 예측 결과 ===")
-    for i, name in enumerate(DISEASE_NAMES):
-        pred = "위험" if result["predictions"][0][i] == 1 else "정상"
-        prob = result["probabilities"][0][i]
-        print(f"  {name}: {pred} (확률: {prob:.4f})")
-    print(f"\n사용된 임계값: {result['thresholds_used']}")
-    print(f"폴드 가중치: {np.round(result['weights_applied'], 4)}")
+        return {
+            "predictions": final_preds,
+            "probabilities": total_probs,
+            "thresholds_used": final_thresholds,
+            "weights_applied": weights,
+        }
+    
+    def _generate_recommendations(self, predictions, probabilities, survey_data):
+        """예측 결과 기반 건강 권장사항 생성"""
+        recommendations = []
+        
+        # 기본 건강 관리 권장사항
+        recommendations.append("규칙적인 운동과 균형 잡힌 식단을 유지하세요.")
+        
+        # 위험 요인별 권장사항
+        if survey_data['smoking']:
+            recommendations.append("금연을 강력히 권장합니다.")
+        
+        if survey_data['exercise'] < 3:
+            recommendations.append("주 3회 이상 규칙적인 운동을 시작하세요.")
+        
+        if survey_data['systolic_bp'] > 140 or survey_data['diastolic_bp'] > 90:
+            recommendations.append("혈압 관리를 위해 염분 섭취를 줄이고 정기 검진을 받으세요.")
+        
+        if survey_data['cholesterol'] > 240:
+            recommendations.append("콜레스테롤 수치 관리를 위해 포화지방 섭취를 줄이세요.")
+        
+        if survey_data['glucose'] > 126:
+            recommendations.append("혈당 관리를 위해 당분 섭취를 조절하고 정기 검진을 받으세요.")
+        
+        # 예측된 위험 질환별 권장사항
+        for i, (disease, pred) in enumerate(zip(self.disease_names, predictions[0])):
+            if pred == 1:
+                recommendations.append(f"{disease} 위험이 높으니 전문의 상담을 받으시기 바랍니다.")
+        
+        return recommendations
+    
+    async def predict(self, survey_data: Dict[str, Any]) -> HealthPredictionResult:
+        """건강 위험도 예측 메인 함수"""
+        try:
+            # 1. 설문 데이터를 DataFrame으로 변환
+            df = self._convert_survey_to_dataframe(survey_data)
+            
+            # 2. 전처리
+            x_scaled = self._preprocess_input(df)
+            
+            # 3. 추론
+            result = self._inference(x_scaled)
+            
+            # 4. 결과 해석
+            predictions = result["predictions"]
+            probabilities = result["probabilities"]
+            
+            # 전체 위험도 점수 계산 (평균 확률)
+            risk_score = float(np.mean(probabilities[0]))
+            
+            # 위험도 등급 결정
+            if risk_score < 0.3:
+                risk_level = "낮음"
+            elif risk_score < 0.6:
+                risk_level = "보통"
+            else:
+                risk_level = "높음"
+            
+            # 권장사항 생성
+            recommendations = self._generate_recommendations(predictions, probabilities, survey_data)
+            
+            # 신뢰도 계산 (가중치 기반)
+            confidence = float(np.mean(result["weights_applied"]))
+            
+            return HealthPredictionResult(
+                risk_score=risk_score,
+                risk_level=risk_level,
+                recommendations=recommendations,
+                confidence=confidence
+            )
+            
+        except Exception as e:
+            raise Exception(f"건강 예측 중 오류 발생: {str(e)}")
