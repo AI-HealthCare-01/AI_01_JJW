@@ -13,7 +13,7 @@ class TaskStatus(StrEnum):
 class HealthSurveyRequest(BaseModel):
     """건강 설문 요청 스키마"""
     age: int = Field(..., ge=1, le=120, description="나이 (1-120)")
-    gender: str = Field(..., regex="^(male|female)$", description="성별 (male/female)")
+    gender: str = Field(..., pattern="^(male|female)$", description="성별 (male/female)")
     height: float = Field(..., ge=50.0, le=250.0, description="키 (cm, 50-250)")
     weight: float = Field(..., ge=10.0, le=300.0, description="몸무게 (kg, 10-300)")
     systolic_bp: int = Field(..., ge=70, le=250, description="수축기 혈압 (70-250)")

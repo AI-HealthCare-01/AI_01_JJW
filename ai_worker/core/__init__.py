@@ -1,11 +1,7 @@
 import logging
 
-from app.core.config import Config
-from app.core.logger import setup_logger
-
-
-def get_config() -> Config:
-    return Config()
+from ai_worker.core.config import config
+from ai_worker.core.logger import setup_logger
 
 
 def get_logger() -> logging.Logger:
@@ -13,5 +9,4 @@ def get_logger() -> logging.Logger:
     return setup_logger()
 
 
-config = get_config()
 default_logger = get_logger()

@@ -1,4 +1,5 @@
 import uuid
+import json
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import ORJSONResponse
@@ -19,23 +20,23 @@ async def predict_health_risk(survey: HealthSurveyRequest):
         # 고유 Task ID 생성
         task_id = str(uuid.uuid4())
         
-        # Task 요청 생성
-        task_request = TaskRequest(
-            task_type="health_prediction",
-            data=survey.dict()
-        )
+        # Task 응답 생성
+        task_response = {
+            "task_id": task_id,
+            "status": TaskStatus.PENDING,
+            "result": None,
+            "error": None,
+            "created_at": datetime.now().isoformat(),
+            "completed_at": None
+        }
         
-        # Task 상태 초기화
-        task_response = TaskResponse(
-            task_id=task_id,
-            status=TaskStatus.PENDING,
-            created_at=datetime.now().isoformat()
-        )
+        # Redis에 Task 저장 (JSON 문자열로 data 저장)
+        task_data = task_response.copy()
+        task_data["data"] = json.dumps(survey.dict())
         
-        # Redis에 Task 저장
         await redis_client.hset(
             f"task:{task_id}",
-            mapping=task_response.dict()
+            mapping=task_data
         )
         await redis_client.expire(f"task:{task_id}", config.TASK_RESULT_TTL)
         
@@ -43,7 +44,7 @@ async def predict_health_risk(survey: HealthSurveyRequest):
         await redis_client.lpush("health_prediction_queue", task_id)
         
         return ORJSONResponse(
-            content=task_response.dict(),
+            content=task_response,
             status_code=status.HTTP_202_ACCEPTED
         )
         
@@ -69,7 +70,17 @@ async def get_task_status(task_id: str):
                 detail="Task를 찾을 수 없습니다"
             )
         
-        return ORJSONResponse(content=task_data)
+        # data 필드 제거 (응답에 불필요)
+        response_data = {k: v for k, v in task_data.items() if k != "data"}
+        
+        # result가 JSON 문자열인 경우 파싱
+        if response_data.get("result") and isinstance(response_data["result"], str):
+            try:
+                response_data["result"] = json.loads(response_data["result"])
+            except json.JSONDecodeError:
+                pass
+        
+        return ORJSONResponse(content=response_data)
         
     except HTTPException:
         raise
@@ -78,3 +89,9 @@ async def get_task_status(task_id: str):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Task 조회 실패: {str(e)}"
         )
+
+
+@health_router.get("/")
+async def health_check():
+    """Health Check 엔드포인트"""
+    return {"status": "healthy", "service": "AI Healthcare API"}
