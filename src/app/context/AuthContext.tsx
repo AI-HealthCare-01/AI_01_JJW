@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { getOAuthUrls, oauthLogin, getUserProfile, logout as apiLogout, setAuthToken, getAuthToken } from '../services/api';
 
 interface User {
@@ -34,54 +34,66 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  // 콜백 처리 중 checkAuth가 중복 실행되는 것을 막기 위한 플래그
+  const isHandlingCallback = useRef(false);
 
-  // 페이지 로드 시 기존 토큰으로 사용자 정보 확인
   useEffect(() => {
-    checkAuth();
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+
+    if (code) {
+      // OAuth 콜백: code가 있으면 콜백 처리만 수행 (checkAuth 건너뜀)
+      isHandlingCallback.current = true;
+      handleOAuthCallback(code, urlParams.get('state'));
+    } else {
+      // 일반 접근: 기존 토큰으로 인증 상태 복원
+      checkAuth();
+    }
   }, []);
 
-  // URL에서 OAuth 콜백 처리
-  useEffect(() => {
-    const handleOAuthCallback = async () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const code = urlParams.get('code');
-      const state = urlParams.get('state');
-      
-      if (code) {
-        try {
-          setIsLoading(true);
-          const provider = state ? 'naver' : 'kakao';
-          const redirectUri = window.location.origin + window.location.pathname;
-          
-          const authResponse = await oauthLogin(provider, code, redirectUri);
-          
-          // 토큰 저장
-          setAuthToken(authResponse.access_token);
-          localStorage.setItem('user_info', JSON.stringify(authResponse.user_info));
-          
-          setUser(authResponse.user_info);
-          
-          // URL에서 쿼리 파라미터 제거
-          window.history.replaceState({}, document.title, window.location.pathname);
-        } catch (error) {
-          console.error('OAuth 로그인 실패:', error);
-          alert('로그인에 실패했습니다. 다시 시도해 주세요.');
-        } finally {
-          setIsLoading(false);
-        }
-      }
-    };
+  const handleOAuthCallback = async (code: string, state: string | null) => {
+    // URL에서 code를 즉시 제거 (새로고침 시 만료된 code 재사용 방지)
+    window.history.replaceState({}, document.title, '/');
 
-    handleOAuthCallback();
-  }, []);
+    try {
+      setIsLoading(true);
+      // provider는 로그인 시작 시 저장한 값으로 판별 (state 불일치 오류 방지)
+      const savedProvider = localStorage.getItem('oauth_provider') as 'kakao' | 'naver' | null;
+      const savedState = localStorage.getItem('oauth_state');
+      const provider: 'kakao' | 'naver' =
+        savedProvider === 'naver' && state && state === savedState ? 'naver' : 'kakao';
+      const redirectUri = window.location.origin + '/';
+
+      const authResponse = await oauthLogin(provider, code, redirectUri);
+
+      setAuthToken(authResponse.access_token);
+      localStorage.setItem('user_info', JSON.stringify(authResponse.user_info));
+      localStorage.removeItem('oauth_state');
+      localStorage.removeItem('oauth_provider');
+
+      setUser(authResponse.user_info);
+      window.history.replaceState({}, document.title, '/select-service');
+    } catch (error) {
+      console.error('OAuth 로그인 실패:', error);
+      localStorage.removeItem('oauth_state');
+      localStorage.removeItem('oauth_provider');
+      setAuthToken(null);
+      localStorage.removeItem('user_info');
+      setUser(null);
+      window.history.replaceState({}, document.title, '/');
+    } finally {
+      setIsLoading(false);
+      isHandlingCallback.current = false;
+    }
+  };
 
   const checkAuth = async () => {
+    if (isHandlingCallback.current) return;
     try {
       setIsLoading(true);
       const token = getAuthToken();
-      
+
       if (!token) {
-        // 로컬 스토리지에서 사용자 정보 확인
         const savedUserInfo = localStorage.getItem('user_info');
         if (savedUserInfo) {
           setUser(JSON.parse(savedUserInfo));
@@ -89,12 +101,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return;
       }
 
-      // 토큰이 있으면 서버에서 사용자 정보 확인
       const userProfile = await getUserProfile();
       setUser(userProfile);
-    } catch (error) {
-      console.error('인증 확인 실패:', error);
-      // 토큰이 유효하지 않으면 제거
+    } catch {
       setAuthToken(null);
       localStorage.removeItem('user_info');
       setUser(null);
@@ -106,24 +115,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (provider: 'kakao' | 'naver') => {
     try {
       setIsLoading(true);
-      
-      // OAuth URL 가져오기
       const urls = await getOAuthUrls();
-      const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname);
-      
+      const redirectUri = window.location.origin + '/';
+
+      // 어떤 provider로 시작했는지 저장 (콜백 시 판별용)
+      localStorage.setItem('oauth_provider', provider);
+
       let oauthUrl: string;
-      
+
       if (provider === 'kakao') {
-        oauthUrl = urls.kakao.replace('{redirect_uri}', redirectUri);
+        oauthUrl =
+          `https://kauth.kakao.com/oauth/authorize` +
+          `?client_id=${urls.kakao_client_id}` +
+          `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+          `&response_type=code`;
       } else {
         const state = Math.random().toString(36).substring(2, 15);
         localStorage.setItem('oauth_state', state);
-        oauthUrl = urls.naver
-          .replace('{redirect_uri}', redirectUri)
-          .replace('{state}', state);
+        oauthUrl =
+          `https://nid.naver.com/oauth2.0/authorize` +
+          `?client_id=${urls.naver_client_id}` +
+          `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+          `&response_type=code` +
+          `&state=${state}`;
       }
-      
-      // OAuth 페이지로 리다이렉트
+
       window.location.href = oauthUrl;
     } catch (error) {
       console.error('OAuth URL 가져오기 실패:', error);
@@ -135,25 +151,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = async () => {
     try {
       await apiLogout();
-    } catch (error) {
-      console.error('로그아웃 API 호출 실패:', error);
+    } catch {
+      // 로그아웃 API 실패해도 로컬 상태 정리
     } finally {
       setUser(null);
+      setAuthToken(null);
       localStorage.removeItem('user_info');
       localStorage.removeItem('oauth_state');
     }
   };
 
-  const value: AuthContextType = {
-    user,
-    isLoading,
-    login,
-    logout,
-    checkAuth,
-  };
-
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ user, isLoading, login, logout, checkAuth }}>
       {children}
     </AuthContext.Provider>
   );
