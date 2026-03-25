@@ -1,10 +1,9 @@
 import React, { useMemo } from 'react';
-import { useLocation, useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Activity, AlertTriangle, CheckCircle, ArrowLeft, FileText, Heart, TrendingUp, Shield, Wind, Stethoscope, Info } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell, Legend } from 'recharts';
 
 interface PredictionResult {
   predictions: {
@@ -303,14 +302,14 @@ export const DashboardPage: React.FC = () => {
                 {/* 허리둘레 판정 */}
                 {waist > 0 && (
                   <div className={`p-3 rounded-lg text-sm ${
-                    (surveyData?.sex === '1' ? waist >= 90 : waist >= 85) 
+                    (surveyData?.sex === '0' ? waist >= 90 : waist >= 85) 
                       ? 'bg-amber-50 text-amber-800' 
                       : 'bg-green-50 text-green-800'
                   }`}>
                     <div className="flex gap-2">
                       <Info className="h-4 w-4 flex-shrink-0 mt-0.5" />
                       <p>
-                        {surveyData?.sex === '1' 
+                        {surveyData?.sex === '0' 
                           ? (waist >= 90 
                             ? `허리둘레(${waist}cm)가 남성 기준(90cm)을 초과하여 복부비만에 해당합니다. 내장지방 관리가 필요하며, 생활습관 개선을 권장합니다.`
                             : `허리둘레(${waist}cm)가 남성 기준(90cm) 미만으로 정상 범위입니다.`)

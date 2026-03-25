@@ -374,20 +374,9 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
 
-  // 2-10. 음주 (29-34)
+  // 2-10. 음주 (29-33) — BD1 항목 제거, BD1_11부터 시작
   {
     id: 29,
-    variable: "BD1",
-    question: "지금까지 살아오면서 술을 마셔 본 적이 있습니까?",
-    category: "음주",
-    type: "select",
-    options: [
-      { label: "예", value: "1" },
-      { label: "아니오", value: "0" },
-    ],
-  },
-  {
-    id: 30,
     variable: "BD1_11",
     question: "최근 1년 동안 술을 얼마나 자주 마셨습니까?",
     category: "음주",
@@ -402,7 +391,7 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
   {
-    id: 31,
+    id: 30,
     variable: "BD2_1",
     question: "한 번에 술을 얼마나 마십니까? (소주 기준)",
     category: "음주",
@@ -416,7 +405,7 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
   {
-    id: 32,
+    id: 31,
     variable: "BD2_31",
     question:
       "한 번의 술자리에서 소주 5잔(또는 맥주 3캔) 이상을 마시는 빈도는 어떻게 됩니까?",
@@ -431,7 +420,7 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
   {
-    id: 33,
+    id: 32,
     variable: "BD7_4",
     question:
       "가족이나 의사가 술을 줄이도록 권유한 적이 있습니까?",
@@ -443,7 +432,7 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
   {
-    id: 34,
+    id: 33,
     variable: "BD7_5",
     question:
       "최근 1년 동안 음주 문제로 상담을 받은 적이 있습니까?",
@@ -455,9 +444,9 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
 
-  // 2-11. 안전의식 (35-37)
+  // 2-11. 안전의식 (34-36)
   {
-    id: 35,
+    id: 34,
     variable: "BA2_12",
     question: "자동차 운전 시 안전벨트를 착용하십니까?",
     category: "안전의식",
@@ -470,7 +459,7 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
   {
-    id: 36,
+    id: 35,
     variable: "BA2_13",
     question: "자동차 앞좌석 탑승 시 안전벨트를 착용하십니까?",
     category: "안전의식",
@@ -483,7 +472,7 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
   {
-    id: 37,
+    id: 36,
     variable: "BA2_14",
     question: "자동차 뒷좌석 탑승 시 안전벨트를 착용하십니까?",
     category: "안전의식",
@@ -496,9 +485,9 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
 
-  // 2-13. 정신건강 (38-39)
+  // 2-13. 정신건강 (37-38)
   {
-    id: 38,
+    id: 37,
     variable: "BP1",
     question:
       "평소 일상생활 중에 스트레스를 어느 정도 느끼고 있습니까?",
@@ -512,7 +501,7 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
   {
-    id: 39,
+    id: 38,
     variable: "BP7",
     question:
       "최근 1년 동안 정신건강 문제로 상담을 받은 적이 있습니까?",
@@ -524,9 +513,9 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
 
-  // 2-14. 흡연 (40-45)
+  // 2-14. 흡연 (39-44)
   {
-    id: 40,
+    id: 39,
     variable: "BS1_1",
     question:
       "지금까지 일반담배(궐련)를 피워 본 적이 있습니까?",
@@ -542,7 +531,7 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
   {
-    id: 41,
+    id: 40,
     variable: "BS12_37",
     question: "궐련형 전자담배를 사용해 본 적이 있습니까?",
     category: "흡연",
@@ -554,7 +543,7 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
   {
-    id: 42,
+    id: 41,
     variable: "BS12_1",
     question: "액상형 전자담배를 사용해 본 적이 있습니까?",
     category: "흡연",
@@ -566,7 +555,7 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
   {
-    id: 43,
+    id: 42,
     variable: "BS8_2",
     question:
       "직장 실내에서 다른 사람이 피우는 담배 연기를 맡은 적이 있습니까?",
@@ -578,7 +567,7 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
   {
-    id: 44,
+    id: 43,
     variable: "BS9_2",
     question:
       "가정 실내에서 다른 사람이 피우는 담배 연기를 맡은 적이 있습니까?",
@@ -590,7 +579,7 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
   {
-    id: 45,
+    id: 44,
     variable: "BS13",
     question:
       "공공장소 실내에서 다른 사람이 피우는 담배 연기를 맡은 적이 있습니까?",
@@ -602,9 +591,9 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
 
-  // 2-15. 신체활동 (46-53)
+  // 2-15. 신체활동 (45-52)
   {
-    id: 46,
+    id: 45,
     variable: "BE3_71",
     question:
       "최근 1주일 동안 평소보다 몸이 매우 힘든 고강도 신체활동을 한 날은 며칠입니까? (일)",
@@ -622,7 +611,7 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
   {
-    id: 47,
+    id: 46,
     variable: "BE3_81",
     question:
       "최근 1주일 동안 평소보다 몸이 조금 힘든 중강도 신체활동을 한 날은 며칠입니까? (일)",
@@ -640,7 +629,7 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
   {
-    id: 48,
+    id: 47,
     variable: "BE3_91",
     question:
       "최근 1주일 동안 장소를 이동할 때 10분 이상 걷거나 자전거를 이용한 날은 며칠입니까?",
@@ -658,7 +647,7 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
   {
-    id: 49,
+    id: 48,
     variable: "BE3_75",
     question:
       "최근 1주일 동안 여가 시간에 고강도 신체활동을 한 날은 며칠입니까?",
@@ -676,7 +665,7 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
   {
-    id: 50,
+    id: 49,
     variable: "BE3_85",
     question:
       "최근 1주일 동안 여가 시간에 중강도 신체활동을 한 날은 며칠입니까?",
@@ -694,7 +683,7 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
   {
-    id: 51,
+    id: 50,
     variable: "BE8_1",
     question:
       "평소 하루에 앉아서 보내는 시간은 어느 정도입니까?",
@@ -706,7 +695,7 @@ export const surveyQuestions: SurveyQuestion[] = [
     placeholder: "예: 8",
   },
   {
-    id: 52,
+    id: 51,
     variable: "BE3_31",
     question: "최근 1주일 동안 10분 이상 걸은 날은 며칠입니까?",
     category: "신체활동",
@@ -723,7 +712,7 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
   {
-    id: 53,
+    id: 52,
     variable: "BE5_1",
     question:
       "최근 1주일 동안 팔굽혀펴기, 윗몸일으키기, 아령, 역기, 철봉 등 근력운동을 한 날은 며칠입니까?",
@@ -739,9 +728,9 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
 
-  // 3-1. 검진기본조사 (54)
+  // 3-1. 검진기본조사 (53)
   {
-    id: 54,
+    id: 53,
     variable: "HE_fh",
     question:
       "부모, 형제, 자매 중 고혈압, 당뇨병, 심근경색/협심증, 뇌졸중을 의사에게 진단받은 사람이 있습니까?",
@@ -753,9 +742,9 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
 
-  // 3-3. 신체계측 (55-57)
+  // 3-3. 신체계측 (54-56)
   {
-    id: 55,
+    id: 54,
     variable: "HE_ht",
     question: "키(신장)를 입력해 주세요.",
     category: "신체계측",
@@ -766,7 +755,7 @@ export const surveyQuestions: SurveyQuestion[] = [
     placeholder: "예: 170.5",
   },
   {
-    id: 56,
+    id: 55,
     variable: "HE_wt",
     question: "몸무게를 입력해 주세요.",
     category: "신체계측",
@@ -777,7 +766,7 @@ export const surveyQuestions: SurveyQuestion[] = [
     placeholder: "예: 68.3",
   },
   {
-    id: 57,
+    id: 56,
     variable: "HE_wc",
     question: "허리둘레를 입력해 주세요.",
     category: "신체계측",
@@ -788,9 +777,9 @@ export const surveyQuestions: SurveyQuestion[] = [
     placeholder: "예: 82.0",
   },
 
-  // 3-7-4. 구강면접 (58-66)
+  // 3-7-4. 구강면접 (57-65)
   {
-    id: 58,
+    id: 57,
     variable: "OR1",
     question: "본인의 구강건강이 어떻다고 생각하십니까?",
     category: "구강건강",
@@ -804,7 +793,7 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
   {
-    id: 59,
+    id: 58,
     variable: "O_pain",
     question:
       "최근 1년 동안 치통(치아가 쑤시거나 욱신거림)을 경험한 적이 있습니까?",
@@ -816,7 +805,7 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
   {
-    id: 60,
+    id: 59,
     variable: "O_ortho",
     question: "교정치료를 받은 경험이 있습니까?",
     category: "구강건강",
@@ -827,7 +816,7 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
   {
-    id: 61,
+    id: 60,
     variable: "BM1_0",
     question: "어제 하루 동안 칫솔질을 하셨습니까?",
     category: "구강건강",
@@ -838,7 +827,7 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
   {
-    id: 62,
+    id: 61,
     variable: "BM7",
     question:
       "치아나 틀니, 잇몸 등 입 안의 문제로 음식을 씹는 데 불편감을 느끼십니까?",
@@ -853,7 +842,7 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
   {
-    id: 63,
+    id: 62,
     variable: "BM8",
     question:
       "치아나 틀니, 잇몸 등 입 안의 문제로 말하는 데 불편감을 느끼십니까?",
@@ -868,7 +857,7 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
   {
-    id: 64,
+    id: 63,
     variable: "OR1_2",
     question: "최근 1년 동안 구강검진을 받은 적이 있습니까?",
     category: "구강건강",
@@ -879,7 +868,7 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
   {
-    id: 65,
+    id: 64,
     variable: "MO4_00",
     question:
       "최근 1년 동안 치과병의원을 이용한 적이 있습니까?",
@@ -891,7 +880,7 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
   {
-    id: 66,
+    id: 65,
     variable: "BM14",
     question:
       "최근 1년 동안 치과 진료가 필요하였으나 받지 못한 적이 있습니까?",
@@ -903,9 +892,9 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
 
-  // 3-10-1. 안검사 설문 (67)
+  // 3-10-1. 안검사 설문 (66)
   {
-    id: 67,
+    id: 66,
     variable: "E_Q_EX",
     question: "안과 검사를 가장 최근에 받은 시기는 언제입니까?",
     category: "안검사",
@@ -919,9 +908,9 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
 
-  // 4-1. 식생활조사 (68-77)
+  // 4-1. 식생활조사 (67-76)
   {
-    id: 68,
+    id: 67,
     variable: "L_BR_FQ",
     question:
       "최근 1년 동안 1주일 동안 아침식사를 몇 회 하셨습니까?",
@@ -936,7 +925,7 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
   {
-    id: 69,
+    id: 68,
     variable: "L_LN_FQ",
     question:
       "최근 1년 동안 1주일 동안 점심식사를 몇 회 하셨습니까?",
@@ -951,7 +940,7 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
   {
-    id: 70,
+    id: 69,
     variable: "L_DN_FQ",
     question:
       "최근 1년 동안 1주일 동안 저녁식사를 몇 회 하셨습니까?",
@@ -966,7 +955,7 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
   {
-    id: 71,
+    id: 70,
     variable: "L_OUT_FQ",
     question: "최근 1년 동안 평균 외식 빈도는 어떻게 됩니까?",
     category: "식생활",
@@ -981,7 +970,7 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
   {
-    id: 72,
+    id: 71,
     variable: "LS_VEG1",
     question:
       "최근 1년 동안 채소류(김치 및 장아찌 포함), 버섯류, 해조류를 얼마나 자주 드셨습니까?",
@@ -996,7 +985,7 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
   {
-    id: 73,
+    id: 72,
     variable: "LS_VEG2",
     question:
       "최근 1년 동안 채소류(김치 및 장아찌 제외), 버섯류, 해조류를 얼마나 자주 드셨습니까?",
@@ -1011,7 +1000,7 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
   {
-    id: 74,
+    id: 73,
     variable: "LS_FRUIT",
     question: "최근 1년 동안 과일류를 얼마나 자주 드셨습니까?",
     category: "식생활",
@@ -1024,7 +1013,7 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
   {
-    id: 75,
+    id: 74,
     variable: "LS_1YR",
     question:
       "최근 1년 동안 2주 이상 비타민이나 무기질 보충제(식이보충제)를 복용한 적이 있습니까?",
@@ -1036,7 +1025,7 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
   {
-    id: 76,
+    id: 75,
     variable: "LK_EDU",
     question:
       "최근 1년 동안 영양교육 및 상담을 받은 적이 있습니까?",
@@ -1048,7 +1037,7 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
   {
-    id: 77,
+    id: 76,
     variable: "LK_LB_CO",
     question: "가공식품을 사거나 고를 때 영양표시를 읽습니까?",
     category: "식생활",
@@ -1060,9 +1049,9 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
 
-  // 4-2. 식품섭취조사 (78-80)
+  // 4-2. 식품섭취조사 (77-79)
   {
-    id: 78,
+    id: 77,
     variable: "N_DIET",
     question:
       "현재 식사요법(당뇨식, 저염식 등)을 하고 계십니까?",
@@ -1074,7 +1063,7 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
   {
-    id: 79,
+    id: 78,
     variable: "N_DUSUAL",
     question: "어제 드신 식사량은 평소와 비교하여 어떻습니까?",
     category: "식품섭취",
@@ -1086,7 +1075,7 @@ export const surveyQuestions: SurveyQuestion[] = [
     ],
   },
   {
-    id: 80,
+    id: 79,
     variable: "N_WAT_C",
     question: "어제 하루 동안 물을 몇 컵 드셨습니까?",
     category: "식품섭취",
@@ -1095,6 +1084,21 @@ export const surveyQuestions: SurveyQuestion[] = [
     min: 0,
     max: 30,
     placeholder: "예: 8",
+  },
+
+  // 4-3. 식품안전 (80)
+  {
+    id: 80,
+    variable: "LF_SAFE",
+    question: "지난 1년 동안 귀하의 가구에서는 식생활 형편이 어떠하였습니까?",
+    category: "식품안전",
+    type: "select",
+    options: [
+      { label: "충분한 양과 다양한 종류의 음식을 먹을 수 있었다", value: "1" },
+      { label: "충분한 양의 음식을 먹었으나 다양하지는 못했다", value: "2" },
+      { label: "경제적으로 어려워 때때로 먹을 것이 부족했다", value: "3" },
+      { label: "경제적으로 어려워 자주 먹을 것이 부족했다", value: "4" },
+    ],
   },
 ];
 

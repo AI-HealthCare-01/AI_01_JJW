@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>만성질환 예측 서비스 - 로그인</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .login-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        .logo {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .logo h1 {
+            color: #333;
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .logo p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .oauth-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .oauth-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.75rem 1rem;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: white;
+        }
+        
+        .kakao-btn {
+            background-color: #FEE500;
+            color: #000;
+        }
+        
+        .kakao-btn:hover {
+            background-color: #FFDD00;
+        }
+        
+        .naver-btn {
+            background-color: #03C75A;
+        }
+        
+        .naver-btn:hover {
+            background-color: #02B351;
+        }
+        
+        .oauth-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .features {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #eee;
+        }
+        
+        .features h3 {
+            color: #333;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        
+        .feature-list {
+            list-style: none;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .feature-list li {
+            padding: 0.25rem 0;
+            position: relative;
+            padding-left: 1.5rem;
+        }
+        
+        .feature-list li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #4CAF50;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">
+            <h1>만성질환 예측 서비스</h1>
+            <p>AI 기반 건강 위험도 분석</p>
+        </div>
+        
+        <div class="oauth-buttons">
+            <button class="oauth-btn kakao-btn" onclick="loginWithKakao()">
+                카카오로 시작하기
+            </button>
+            <button class="oauth-btn naver-btn" onclick="loginWithNaver()">
+                네이버로 시작하기
+            </button>
+        </div>
+        
+        <div class="features">
+            <h3>서비스 특징</h3>
+            <ul class="feature-list">
+                <li>80개 항목 건강 설문</li>
+                <li>4가지 만성질환 예측</li>
+                <li>개인맞춤 건강 권장사항</li>
+                <li>예측 이력 관리</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // OAuth URL 가져오기
+        async function getOAuthUrls() {
+            try {
+                const response = await fetch('/api/v1/auth/oauth/urls');
+                const urls = await response.json();
+                return urls;
+            } catch (error) {
+                console.error('OAuth URL 가져오기 실패:', error);
+                return null;
+            }
+        }
+
+        // 카카오 로그인
+        async function loginWithKakao() {
+            const urls = await getOAuthUrls();
+            if (urls && urls.kakao) {
+                const redirectUri = encodeURIComponent(window.location.origin + '/auth/callback');
+                const kakaoUrl = urls.kakao.replace('{redirect_uri}', redirectUri);
+                window.location.href = kakaoUrl;
+            } else {
+                alert('카카오 로그인 설정이 필요합니다.');
+            }
+        }
+
+        // 네이버 로그인
+        async function loginWithNaver() {
+            const urls = await getOAuthUrls();
+            if (urls && urls.naver) {
+                const redirectUri = encodeURIComponent(window.location.origin + '/auth/callback');
+                const state = Math.random().toString(36).substring(2, 15);
+                const naverUrl = urls.naver
+                    .replace('{redirect_uri}', redirectUri)
+                    .replace('{state}', state);
+                
+                // state를 localStorage에 저장
+                localStorage.setItem('oauth_state', state);
+                window.location.href = naverUrl;
+            } else {
+                alert('네이버 로그인 설정이 필요합니다.');
+            }
+        }
+
+        // URL 파라미터에서 인증 코드 확인
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            const state = urlParams.get('state');
+            
+            if (code) {
+                // OAuth 콜백 처리
+                handleOAuthCallback(code, state);
+            }
+        };
+
+        // OAuth 콜백 처리
+        async function handleOAuthCallback(code, state) {
+            try {
+                const provider = state ? 'naver' : 'kakao';
+                const redirectUri = window.location.origin + '/auth/callback';
+                
+                const response = await fetch('/api/v1/auth/oauth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        provider: provider,
+                        code: code,
+                        redirect_uri: redirectUri
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // 토큰 저장
+                    localStorage.setItem('access_token', data.access_token);
+                    localStorage.setItem('user_info', JSON.stringify(data.user_info));
+                    
+                    // 대시보드로 이동
+                    window.location.href = '/dashboard.html';
+                } else {
+                    const error = await response.json();
+                    alert('로그인 실패: ' + error.detail);
+                }
+            } catch (error) {
+                console.error('로그인 처리 중 오류:', error);
+                alert('로그인 처리 중 오류가 발생했습니다.');
+            }
+        }
+    </script>
+</body>
+</html>
