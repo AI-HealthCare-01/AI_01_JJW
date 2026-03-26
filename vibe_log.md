@@ -434,3 +434,28 @@
   - `ruff format . --check` → 33 files already formatted
   - `pytest app/tests` → 23 passed (test_get_oauth_urls 응답 구조 변경 반영)
   - 프론트엔드 빌드 성공 (1385 modules transformed)
+
+## [2025-07-11] - ✅ 카카오 로그인 버그 수정 / 인증 코드 기반 접근 제어 강화 / AI 추론 오타 수정
+
+* **변경된 파일:** `app/services/oauth.py`, `src/app/context/AuthContext.tsx`, `src/app/components/SurveyPage.tsx`, `static/` (빌드 반영)
+* **핵심 변경 사항:**
+  - [논리 - 카카오 로그인]: 카카오 `/v1/user/access_token_info` API는 단순 토큰 유효성 검증용으로, 사용자 정보를 반환하지 않아 `name`, `email`이 빈 값이 되고 일부 환경에서 실패. `/v2/user/me`로 교체하여 실제 사용자 정보(이름, 이메일, 프로필 이미지) 획득 및 안정성 확보
+  - [논리 - 페이지 이동]: 콜백 처리 후 `window.history.replaceState('/select-service')`는 URL만 변경하고 React Router를 트리거하지 않음. `pushState`로 변경하여 React Router의 `popstate` 이벤트가 발생하도록 수정
+  - [논리 - 인증 맹점]: `checkAuth`에서 JWT 토큰 없이 `localStorage.user_info`만 있어도 `user` 상태가 세팅되어 `ProtectedRoute`를 우회 가능했던 취약점 제거. 토큰 없으면 `user_info`도 삭제하고 `null` 처리
+  - [기능]: SurveyPage 오버레이 오타 "년석 진행중.." → "분석 진행중.." 수정
+* **결과 확인:** `npm run build` 성공 (1385 modules transformed), static/ 최신 빌드 반영
+
+**권장 사항(Best Practice):**
+- 카카오 개발자 콘솔 → 앱 → 카카오 로그인 → 동의항목에서 `profile_nickname`, `account_email` 선택 동의 설정 필요 (미설정 시 빈 값 반환)
+- 네이버 개발자 콘솔에서도 동일하게 이름/이메일 제공 동의항목 활성화 권장
+
+**존재하는 리스크(Current Limitation / Issues):**
+- `pushState` 방식은 브라우저 뒤로가기 시 `/select-service`로 이동 후 다시 `/`로 돌아올 수 있음 — 필요 시 `useNavigate` 훅을 AuthContext에 주입하는 방식으로 개선 가능
+
+## [2025-07-11] - ✅ 개인정보 최소 수집 원칙 적용 — UserInfo 스키마 단순화
+
+* **변경된 파일:** `schemas.py`, `app/services/oauth.py`, `app/dependencies/auth.py`, `app/apis/v1/auth.py`, `app/tests/test_auth.py`, `src/app/context/AuthContext.tsx`, `src/app/components/DashboardPage.tsx`, `static/` (빌드 반영)
+* **핵심 변경 사항:**
+  - [논리]: 서비스 목적은 "인증"이지 개인정보 수집이 아님. `user_id`와 `provider`만으로 인증 및 세션 관리가 충분하므로 `email`, `name`, `profile_image` 필드 전면 제거. 카카오/네이버 동의항목 요구 없이 로그인 가능
+  - [기능]: `UserInfo` 스키마 → `user_id`, `provider` 2개 필드만 유지 / JWT payload 동일하게 단순화 / `test-login` API payload 수정 / `DashboardPage` `user.name` → provider 기반 표시로 변경
+* **결과 확인:** `npm run build` 성공 (1385 modules transformed)

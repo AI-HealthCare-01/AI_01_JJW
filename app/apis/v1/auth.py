@@ -71,12 +71,10 @@ async def logout():
 async def test_login():
     test_user = {
         "user_id": "test_user_123",
-        "email": "test@example.com",
-        "name": "테스트 사용자",
         "provider": "test",
     }
 
-    access_token = create_access_token(data={"user_id": test_user["user_id"]})
+    access_token = create_access_token(data={"user_id": test_user["user_id"], "provider": test_user["provider"]})
 
     response = ORJSONResponse(content={"access_token": access_token, "user_info": test_user})
 

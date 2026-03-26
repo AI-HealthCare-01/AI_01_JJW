@@ -3,10 +3,7 @@ import { getOAuthUrls, oauthLogin, getUserProfile, logout as apiLogout, setAuthT
 
 interface User {
   user_id: string;
-  email: string;
-  name: string;
   provider: string;
-  profile_image?: string;
 }
 
 interface AuthContextType {
@@ -72,7 +69,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.removeItem('oauth_provider');
 
       setUser(authResponse.user_info);
-      window.history.replaceState({}, document.title, '/select-service');
+      // React Router가 인식할 수 있도록 pushState로 경로 변경
+      window.history.pushState({}, document.title, '/select-service');
     } catch (error) {
       console.error('OAuth 로그인 실패:', error);
       localStorage.removeItem('oauth_state');
@@ -93,11 +91,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
       const token = getAuthToken();
 
+      // 토큰이 없으면 인증되지 않은 상태 — localStorage user_info만으로는 인증 불가
       if (!token) {
-        const savedUserInfo = localStorage.getItem('user_info');
-        if (savedUserInfo) {
-          setUser(JSON.parse(savedUserInfo));
-        }
+        localStorage.removeItem('user_info');
+        setUser(null);
         return;
       }
 

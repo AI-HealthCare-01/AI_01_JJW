@@ -158,7 +158,7 @@ export const SurveyPage: React.FC = () => {
       {submitting && (
         <div className="fixed inset-0 bg-white/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
           <Loader2 className="h-12 w-12 animate-spin text-blue-600 mb-4" />
-          <p className="text-xl font-semibold text-gray-700">년석 진행중..</p>
+          <p className="text-xl font-semibold text-gray-700">분석 진행중..</p>
           <p className="text-sm text-gray-500 mt-2">AI가 건강 데이터를 분석하고 있습니다</p>
         </div>
       )}

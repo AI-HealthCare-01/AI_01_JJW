@@ -49,8 +49,8 @@ def test_test_login_sets_cookie(client):
 
 
 def test_get_me_with_test_token(client):
-    # test-login 토큰은 user_id만 포함하므로 /me 검증 시 401 반환
     login_resp = client.post("/api/v1/auth/test-login")
     token = login_resp.json()["access_token"]
     me_resp = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
-    assert me_resp.status_code == 401
+    assert me_resp.status_code == 200
+    assert me_resp.json()["user_id"] == "test_user_123"

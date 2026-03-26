@@ -168,10 +168,7 @@ class OAuthRequest(BaseModel):
 
 class UserInfo(BaseModel):
     user_id: str = Field(..., description="사용자 ID")
-    email: str = Field("", description="이메일 (선택 동의)")
-    name: str = Field("", description="이름 (선택 동의)")
     provider: OAuthProvider = Field(..., description="OAuth 제공자")
-    profile_image: str | None = Field(None, description="프로필 이미지 URL")
 
 
 class AuthResponse(BaseModel):

@@ -136,7 +136,7 @@ export const DashboardPage: React.FC = () => {
             </div>
             <div>
               <h1 className="text-lg text-gray-900">건강 분석 대시보드</h1>
-              <p className="text-sm text-gray-500">{user?.name}님의 분석 결과</p>
+              <p className="text-sm text-gray-500">{user?.provider === 'kakao' ? '카카오' : '네이버'} 사용자</p>
             </div>
           </div>
           <div className="flex gap-2">

@@ -40,19 +40,16 @@ class OAuthService:
                 token_json = token_response.json()
                 access_token = token_json["access_token"]
 
-                # id_token(JWT)에서 sub 추출 또는 tokeninfo API 사용
-                # 어떤 사용자 정보도 요청하지 않고 인증만 수행
-                tokeninfo_response = await client.get(
-                    "https://kapi.kakao.com/v1/user/access_token_info",
+                user_response = await client.get(
+                    "https://kapi.kakao.com/v2/user/me",
                     headers={"Authorization": f"Bearer {access_token}"},
                 )
-                tokeninfo_response.raise_for_status()
-                user_id = str(tokeninfo_response.json()["id"])
+                user_response.raise_for_status()
+                user_json = user_response.json()
+                user_id = str(user_json["id"])
 
             return UserInfo(
                 user_id=user_id,
-                email="",
-                name="",
                 provider=OAuthProvider.KAKAO,
             )
         except HTTPException:
@@ -87,10 +84,7 @@ class OAuthService:
 
             return UserInfo(
                 user_id=response_data.get("id", ""),
-                email=response_data.get("email", ""),
-                name=response_data.get("name", ""),
                 provider=OAuthProvider.NAVER,
-                profile_image=response_data.get("profile_image"),
             )
         except Exception as e:
             raise HTTPException(
@@ -101,8 +95,6 @@ class OAuthService:
     def create_access_token(self, user_info: UserInfo) -> str:
         payload = {
             "user_id": user_info.user_id,
-            "email": user_info.email,
-            "name": user_info.name,
             "provider": user_info.provider,
             "exp": datetime.now(UTC) + timedelta(hours=24),
             "iat": datetime.now(UTC),

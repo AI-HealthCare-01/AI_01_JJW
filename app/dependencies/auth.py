@@ -28,10 +28,7 @@ async def get_current_user(
 
         return UserInfo(
             user_id=payload["user_id"],
-            email=payload["email"],
-            name=payload["name"],
             provider=payload["provider"],
-            profile_image=payload.get("profile_image"),
         )
 
     except ValueError as e:
