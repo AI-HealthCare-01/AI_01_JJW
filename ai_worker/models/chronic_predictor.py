@@ -245,4 +245,4 @@ class ChronicDiseasePredictor:
             }
 
         except Exception as e:
-            raise Exception(f"만성질환 예측 중 오류 발생: {str(e)}")
+            raise Exception(f"만성질환 예측 중 오류 발생: {e!s}") from e

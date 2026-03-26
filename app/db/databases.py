@@ -1,4 +1,5 @@
 import redis.asyncio as redis
+
 from app.core.config import config
 
 # Redis 연결 풀
@@ -13,7 +14,7 @@ async def get_redis() -> redis.Redis:
             host=config.REDIS_HOST,
             port=config.REDIS_PORT,
             db=config.REDIS_DB,
-            decode_responses=True
+            decode_responses=True,
         )
     return redis.Redis(connection_pool=redis_pool)
 

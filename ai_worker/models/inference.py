@@ -1,8 +1,7 @@
 import json
 import os
-import asyncio
 import sys
-from typing import Dict, Any
+from typing import Any
 
 import joblib
 import numpy as np
@@ -109,18 +108,17 @@ class HealthPredictor:
         self.input_dim = 127
         self.n_splits = 7
         self.disease_names = ["당뇨병", "고혈압", "심혈관질환", "뇌졸중"]
-        
+
         # 전처리 객체들 로드
         try:
             self.scaler, self.encoder, self.feature_cols, self.encoding_cols = self._load_preprocessing_artifacts()
         except Exception as e:
             print(f"Warning: Could not load preprocessing artifacts: {e}")
-            # 기본값으로 설정 (실제 모델 파일이 없을 때 테스트용)
             self.scaler = None
             self.encoder = None
             self.feature_cols = []
             self.encoding_cols = []
-    
+
     def _load_preprocessing_artifacts(self):
         """학습 시 저장한 전처리 객체들을 로드"""
         scaler = joblib.load(os.path.join(self.model_save_path, "scaler.pkl"))
@@ -133,37 +131,36 @@ class HealthPredictor:
             encoding_cols = json.load(f)
 
         return scaler, encoder, feature_cols, encoding_cols
-    
-    def _convert_survey_to_dataframe(self, survey_data: Dict[str, Any]) -> pd.DataFrame:
+
+    def _convert_survey_to_dataframe(self, survey_data: dict[str, Any]) -> pd.DataFrame:
         """설문 데이터를 모델 입력 형태로 변환"""
-        # 기본 매핑 (실제 모델 학습 시 사용된 컬럼명에 맞게 조정 필요)
         df_data = {
-            'age': [survey_data['age']],
-            'gender': [1 if survey_data['gender'] == 'male' else 2],
-            'height': [survey_data['height']],
-            'weight': [survey_data['weight']],
-            'systolic_bp': [survey_data['systolic_bp']],
-            'diastolic_bp': [survey_data['diastolic_bp']],
-            'cholesterol': [survey_data['cholesterol']],
-            'glucose': [survey_data['glucose']],
-            'smoking': [2 if survey_data['smoking'] else 1],
-            'alcohol': [2 if survey_data['alcohol'] else 1],
-            'exercise': [survey_data['exercise']]
+            "age": [survey_data["age"]],
+            "gender": [1 if survey_data["gender"] == "male" else 2],
+            "height": [survey_data["height"]],
+            "weight": [survey_data["weight"]],
+            "systolic_bp": [survey_data["systolic_bp"]],
+            "diastolic_bp": [survey_data["diastolic_bp"]],
+            "cholesterol": [survey_data["cholesterol"]],
+            "glucose": [survey_data["glucose"]],
+            "smoking": [2 if survey_data["smoking"] else 1],
+            "alcohol": [2 if survey_data["alcohol"] else 1],
+            "exercise": [survey_data["exercise"]],
         }
-        
+
         # BMI 계산
-        height_m = survey_data['height'] / 100
-        bmi = survey_data['weight'] / (height_m ** 2)
-        df_data['bmi'] = [bmi]
-        
+        height_m = survey_data["height"] / 100
+        bmi = survey_data["weight"] / (height_m**2)
+        df_data["bmi"] = [bmi]
+
         return pd.DataFrame(df_data)
-    
+
     def _preprocess_input(self, raw_df):
         """원본 DataFrame을 모델 입력 형태로 전처리"""
         if self.scaler is None:
             # 테스트용 더미 데이터 반환
             return np.random.randn(1, self.input_dim).astype(np.float32)
-        
+
         # 이진 컬럼 변환 (1→0, 2→1)
         binary_cols = [col for col in raw_df.columns if set(raw_df[col].dropna().unique()) <= {1, 2}]
         for col in binary_cols:
@@ -182,14 +179,14 @@ class HealthPredictor:
         for col in self.feature_cols:
             if col not in raw_df.columns:
                 raw_df[col] = 0
-        
+
         x = raw_df[self.feature_cols]
 
         # 스케일링
         x_scaled = self.scaler.transform(x).astype(np.float32)
 
         return x_scaled
-    
+
     def _inference(self, x_scaled, temperature=0.44):
         """가중 앙상블 추론 (테스트용 더미 구현)"""
         # 실제 모델 파일이 없을 때 더미 결과 반환
@@ -200,7 +197,7 @@ class HealthPredictor:
                 "thresholds_used": np.array([0.5, 0.5, 0.5, 0.5]),
                 "weights_applied": np.array([1.0]),
             }
-        
+
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         x_tensor = torch.from_numpy(x_scaled).float()
@@ -220,7 +217,6 @@ class HealthPredictor:
             del cp_meta
 
         if not f2_scores:
-            # 더미 결과 반환
             return {
                 "predictions": np.array([[0, 0, 0, 0]]),
                 "probabilities": np.array([[0.2, 0.3, 0.1, 0.15]]),
@@ -261,56 +257,56 @@ class HealthPredictor:
             "thresholds_used": final_thresholds,
             "weights_applied": weights,
         }
-    
+
     def _generate_recommendations(self, predictions, probabilities, survey_data):
         """예측 결과 기반 건강 권장사항 생성"""
         recommendations = []
-        
+
         # 기본 건강 관리 권장사항
         recommendations.append("규칙적인 운동과 균형 잡힌 식단을 유지하세요.")
-        
+
         # 위험 요인별 권장사항
-        if survey_data.get('smoking', False):
+        if survey_data.get("smoking", False):
             recommendations.append("금연을 강력히 권장합니다.")
-        
-        if survey_data.get('exercise', 0) < 3:
+
+        if survey_data.get("exercise", 0) < 3:
             recommendations.append("주 3회 이상 규칙적인 운동을 시작하세요.")
-        
-        if survey_data.get('systolic_bp', 0) > 140 or survey_data.get('diastolic_bp', 0) > 90:
+
+        if survey_data.get("systolic_bp", 0) > 140 or survey_data.get("diastolic_bp", 0) > 90:
             recommendations.append("혈압 관리를 위해 염분 섭취를 줄이고 정기 검진을 받으세요.")
-        
-        if survey_data.get('cholesterol', 0) > 240:
+
+        if survey_data.get("cholesterol", 0) > 240:
             recommendations.append("콜레스테롤 수치 관리를 위해 포화지방 섭취를 줄이세요.")
-        
-        if survey_data.get('glucose', 0) > 126:
+
+        if survey_data.get("glucose", 0) > 126:
             recommendations.append("혈당 관리를 위해 당분 섭취를 조절하고 정기 검진을 받으세요.")
-        
+
         # 예측된 위험 질환별 권장사항
-        for i, (disease, pred) in enumerate(zip(self.disease_names, predictions[0])):
+        for _i, (disease, pred) in enumerate(zip(self.disease_names, predictions[0], strict=False)):
             if pred == 1:
                 recommendations.append(f"{disease} 위험이 높으니 전문의 상담을 받으시기 바랍니다.")
-        
+
         return recommendations
-    
-    async def predict(self, survey_data: Dict[str, Any]) -> HealthPredictionResult:
+
+    async def predict(self, survey_data: dict[str, Any]) -> HealthPredictionResult:
         """건강 위험도 예측 메인 함수"""
         try:
             # 1. 설문 데이터를 DataFrame으로 변환
             df = self._convert_survey_to_dataframe(survey_data)
-            
+
             # 2. 전처리
             x_scaled = self._preprocess_input(df)
-            
+
             # 3. 추론
             result = self._inference(x_scaled)
-            
+
             # 4. 결과 해석
             predictions = result["predictions"]
             probabilities = result["probabilities"]
-            
+
             # 전체 위험도 점수 계산 (평균 확률)
             risk_score = float(np.mean(probabilities[0]))
-            
+
             # 위험도 등급 결정
             if risk_score < 0.3:
                 risk_level = "낮음"
@@ -318,19 +314,19 @@ class HealthPredictor:
                 risk_level = "보통"
             else:
                 risk_level = "높음"
-            
+
             # 권장사항 생성
             recommendations = self._generate_recommendations(predictions, probabilities, survey_data)
-            
+
             # 신뢰도 계산 (가중치 기반)
             confidence = float(np.mean(result["weights_applied"]))
-            
+
             return HealthPredictionResult(
                 risk_score=risk_score,
                 risk_level=risk_level,
                 recommendations=recommendations,
-                confidence=confidence
+                confidence=confidence,
             )
-            
+
         except Exception as e:
-            raise Exception(f"건강 예측 중 오류 발생: {str(e)}")
+            raise Exception(f"건강 예측 중 오류 발생: {e!s}") from e

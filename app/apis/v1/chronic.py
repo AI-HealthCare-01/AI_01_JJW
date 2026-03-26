@@ -1,3 +1,4 @@
+import asyncio
 import json
 import uuid
 from datetime import datetime
@@ -24,7 +25,6 @@ chronic_router = APIRouter()
 async def predict_chronic_disease(
     survey: ChronicDiseaseSurveyRequest,
 ):
-    """만성질환 예측 (동기식 - 프론트엔드 직접 호출용)"""
     try:
         redis_client = await get_redis()
         task_id = str(uuid.uuid4())
@@ -44,8 +44,6 @@ async def predict_chronic_disease(
         await redis_client.lpush("chronic_disease_prediction_queue", task_id)
 
         # 폴링으로 결과 대기 (최대 30초)
-        import asyncio
-
         for _ in range(60):
             await asyncio.sleep(0.5)
             task_result = await redis_client.hgetall(f"task:{task_id}")
@@ -56,10 +54,6 @@ async def predict_chronic_disease(
                         result_data = json.loads(result_data)
                     except json.JSONDecodeError:
                         result_data = {}
-
-                # 프론트엔드 DashboardPage 기대 형식으로 변환
-                probabilities = result_data.get("probabilities", {})
-                thresholds = result_data.get("thresholds", {})
 
                 predictions = {
                     "DJ8_pre": result_data.get("DJ8_pre", 0),
@@ -93,8 +87,8 @@ async def predict_chronic_disease(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"예측 요청 실패: {str(e)}",
-        )
+            detail=f"예측 요청 실패: {e!s}",
+        ) from e
 
 
 @chronic_router.post("/predict/async", response_model=TaskResponse)
@@ -102,7 +96,6 @@ async def predict_chronic_disease_async(
     survey: ChronicDiseaseSurveyRequest,
     current_user: Annotated[UserInfo, Depends(get_current_user)],
 ):
-    """만성질환 예측 (비동기식 - Task ID 기반 폴링용)"""
     try:
         redis_client = await get_redis()
         task_id = str(uuid.uuid4())
@@ -131,13 +124,12 @@ async def predict_chronic_disease_async(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"예측 요청 생성 실패: {str(e)}",
-        )
+            detail=f"예측 요청 생성 실패: {e!s}",
+        ) from e
 
 
 @chronic_router.get("/task/{task_id}", response_model=TaskResponse)
 async def get_prediction_task_status(task_id: str):
-    """예측 Task 상태 조회"""
     try:
         redis_client = await get_redis()
         task_data = await redis_client.hgetall(f"task:{task_id}")
@@ -163,13 +155,12 @@ async def get_prediction_task_status(task_id: str):
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"작업 상태 조회 실패: {str(e)}",
-        )
+            detail=f"작업 상태 조회 실패: {e!s}",
+        ) from e
 
 
 @chronic_router.get("/")
 async def chronic_disease_info():
-    """만성질환 예측 서비스 정보"""
     return ORJSONResponse(content={
         "service": "만성질환 예측 서비스",
         "diseases": [

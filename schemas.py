@@ -1,6 +1,7 @@
-from typing import Any, Optional
-from pydantic import BaseModel, Field
 from enum import StrEnum
+from typing import Any
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class TaskStatus(StrEnum):
@@ -11,8 +12,6 @@ class TaskStatus(StrEnum):
 
 
 class ChronicDiseaseSurveyRequest(BaseModel):
-    """만성질환 예측을 위한 80개 피처 설문 스키마"""
-
     # 기본 인구학적 정보
     sex: int = Field(..., ge=0, le=2, description="성별 (0: 남성, 1: 여성)")
     age: int = Field(..., ge=1, le=120, description="나이")
@@ -135,23 +134,19 @@ class ChronicDiseaseSurveyRequest(BaseModel):
 
 
 class PredictionResponse(BaseModel):
-    """프론트엔드 DashboardPage가 기대하는 응답 형식"""
+    model_config = ConfigDict(populate_by_name=True)
 
     predictions: dict[str, int] = Field(..., description="질환별 예측 결과 (0 또는 1)")
     guidelines: Any | None = Field(None, description="건강 개선 가이드라인")
-    surveyData: dict[str, str] = Field(..., description="원본 설문 데이터")
+    survey_data: dict[str, str] = Field(..., alias="surveyData", description="원본 설문 데이터")
 
 
 class TaskRequest(BaseModel):
-    """AI 작업 요청 스키마"""
-
     task_type: str = Field(..., description="작업 유형")
     data: dict[str, Any] = Field(..., description="작업 데이터")
 
 
 class TaskResponse(BaseModel):
-    """AI 작업 응답 스키마 (비동기 폴링용)"""
-
     task_id: str = Field(..., description="작업 ID")
     status: TaskStatus = Field(..., description="작업 상태")
     result: dict[str, Any] | None = Field(None, description="작업 결과")
@@ -160,32 +155,25 @@ class TaskResponse(BaseModel):
     completed_at: str | None = Field(None, description="완료 시간")
 
 
-# OAuth 관련 스키마
 class OAuthProvider(StrEnum):
     KAKAO = "kakao"
     NAVER = "naver"
 
 
 class OAuthRequest(BaseModel):
-    """OAuth 인증 요청"""
-
     provider: OAuthProvider = Field(..., description="OAuth 제공자")
     code: str = Field(..., description="인증 코드")
     redirect_uri: str = Field(..., description="리다이렉트 URI")
 
 
 class UserInfo(BaseModel):
-    """사용자 정보"""
-
     user_id: str = Field(..., description="사용자 ID")
-    email: str = Field(..., description="이메일")
-    name: str = Field(..., description="이름")
+    email: str = Field("", description="이메일 (선택 동의)")
+    name: str = Field("", description="이름 (선택 동의)")
     provider: OAuthProvider = Field(..., description="OAuth 제공자")
     profile_image: str | None = Field(None, description="프로필 이미지 URL")
 
 
 class AuthResponse(BaseModel):
-    """인증 응답"""
-
     access_token: str = Field(..., description="액세스 토큰")
     user_info: UserInfo = Field(..., description="사용자 정보")

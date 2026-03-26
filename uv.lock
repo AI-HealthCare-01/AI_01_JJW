@@ -41,6 +41,7 @@ app = [
 dev = [
     { name = "coverage" },
     { name = "mypy" },
+    { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "ruff" },
 ]
@@ -73,6 +74,7 @@ app = [
 dev = [
     { name = "coverage", specifier = ">=7.13.2" },
     { name = "mypy", specifier = ">=1.19.1" },
+    { name = "pytest", specifier = ">=8.0.0" },
     { name = "pytest-asyncio", specifier = ">=1.3.0" },
     { name = "ruff", specifier = ">=0.14.14" },
 ]

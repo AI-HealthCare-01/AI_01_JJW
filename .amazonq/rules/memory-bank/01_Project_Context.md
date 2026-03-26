@@ -5,7 +5,7 @@
 	- Model Artifacts: ./ai_worker/models/checkpoints
 2. Goal: Figma UI(./src) 기반 웹 서비스와 딥러닝 추론 모델(./ai_worker/models)의 완전한 결합
 3. Architecture: 제공된 Application_Architecture_Diagram.png 및 architecture.md를 100% 준수한다.
-3. Tech Stack: FastAPI, Docker, Redis, Nginx, uv, GitHub Actions (CI/CD)
+4. Tech Stack: FastAPI, Docker, Redis, Nginx, uv, GitHub Actions (CI/CD)
 	- MySQL/ORM 제거
 5. Infrastructure: AWS EC2 환경, docker-compose 기반 컨테이너 오케스트레이션
 
@@ -39,7 +39,7 @@
 
 # Constraints & Format & Workflow & Integrity Check
 1. Phase 1 (Analysis): 현재 코드와 제공된 아키텍처 간의 Interface Mismatch를 분석하여 보고하라. (예: 추론 코드의 입력 파라미터와 API 요청 데이터의 불일치)
-2. Phase 2 (Implementation): 승인 후, docker-compose.yml, nginx.conf, main.py(API), worker.py(AI).github/workflows/ci.yml 순으로 코드를 생성하라.
+2. Phase 2 (Implementation): 승인 후, docker-compose.yml, nginx.conf, main.py(API), worker.py(AI) 순으로 코드를 생성하라.
 3. Phase 3 (Validation):
 	- 모든 작업 직후 `vibe_log.md`를 최신화하라.
 	- Redis 비동기 큐 흐름, Nginx 프록시 설정, GitHub CI 통과 가능성을 최종 검증하라.
