@@ -4,20 +4,16 @@
 
 ### 1. 사전 준비
 ```bash
-# Docker Desktop 설치 확인
 docker --version
 docker compose version
 ```
 
 ### 2. 환경 설정
 ```powershell
-# 프로젝트 디렉토리로 이동
 cd AI_HealthCare_Final_Project_Template
 
 # 환경 변수 파일 복사
 copy envs\example.local.env envs\.local.env
-
-# .env 파일 생성 (심볼릭 링크 대신 복사 권장 - Windows 호환성)
 copy envs\.local.env .env
 ```
 
@@ -53,21 +49,24 @@ docker compose logs -f
 
 | URL | 동작 |
 |-----|------|
-| `http://localhost` | 인증 X → 로그인 페이지, 인증 O → 서비스 선택 페이지 |
+| `http://localhost` | 인증 X → 로그인 페이지, 인증 O → "이미 로그인" 안내 후 서비스 선택 페이지 |
 | `http://localhost/login.html` | 동일 (SPA fallback → index.html → React Router 처리) |
+| `http://localhost/select-service` | 인증 필수 — 미인증 시 `/`로 리다이렉트 |
+| `http://localhost/survey` | 인증 필수 — 미인증 시 `/`로 리다이렉트 |
+| `http://localhost/dashboard` | 인증 필수 — 미인증 시 `/`로 리다이렉트 |
 | `http://localhost/api/docs` | Swagger UI |
 | `http://localhost/api/v1/health/` | 헬스체크 |
 
-> **핵심**: `login.html`은 별도 파일이 아닙니다. Nginx가 `/login.html` 요청을 `index.html`(SPA)로 서빙하고, React Router가 인증 상태에 따라 로그인 페이지 또는 서비스 선택 페이지를 렌더링합니다.
+> **인증 가드**: `/select-service`, `/survey`, `/dashboard`는 로그인 없이 접근 불가합니다.
+> 미인증 접근 시 자동으로 로그인 페이지(`/`)로 리다이렉트됩니다.
 
 ---
 
 ## 🧪 테스트 시나리오
 
-### 1. 기본 접근 테스트
-- **메인 페이지**: http://localhost → 로그인 페이지 표시 확인
-- **로그인 URL**: http://localhost/login.html → 동일하게 로그인 페이지 표시 확인
-- **API 문서**: http://localhost/api/docs
+### 1. 인증 가드 테스트
+- 브라우저에서 `http://localhost/survey` 직접 접근 → 로그인 페이지로 리다이렉트 확인
+- 브라우저에서 `http://localhost/dashboard` 직접 접근 → 로그인 페이지로 리다이렉트 확인
 
 ### 2. OAuth 없이 테스트 로그인
 브라우저 개발자 도구 콘솔에서:
@@ -86,8 +85,16 @@ $token = $response.access_token
 Write-Host "Access Token: $token"
 ```
 
-### 3. 카카오/네이버 로그인 테스트
-OAuth 키 설정 후 http://localhost 접속 → 카카오/네이버 버튼 클릭 → 인증 완료 후 서비스 선택 페이지 이동 확인
+> **주의**: test-login 토큰은 `/api/v1/auth/me` 엔드포인트에서 401을 반환합니다 (user_id만 포함).
+> 서비스 선택 페이지 이동은 localStorage의 `user_info`로 처리되므로 정상 동작합니다.
+
+### 3. 이미 로그인 상태 안내 메시지 테스트
+1. 테스트 로그인 후 `http://localhost`로 이동
+2. "이미 카카오/네이버 로그인이 되어있습니다." 토스트 메시지 확인
+3. 자동으로 `/select-service`로 이동 확인
+
+### 4. 카카오/네이버 로그인 테스트
+OAuth 키 설정 후 `http://localhost` 접속 → 카카오/네이버 버튼 클릭 → 인증 완료 후 서비스 선택 페이지 이동 확인
 
 **OAuth 흐름:**
 1. 로그인 버튼 클릭 → `localStorage`에 `oauth_provider` 저장 후 OAuth 인증 페이지로 리다이렉트
@@ -98,9 +105,18 @@ OAuth 키 설정 후 http://localhost 접속 → 카카오/네이버 버튼 클�
 > **카카오 Redirect URI**: `http://localhost` (개발자 콘솔에 등록 필요)
 > **네이버 Redirect URI**: `http://localhost` (개발자 콘솔에 등록 필요)
 
-### 4. 만성질환 예측 테스트
+### 5. 만성질환 예측 설문 테스트
+1. 로그인 후 서비스 선택 → 만성질환 예측 선택
+2. 80개 문항 입력 (또는 "자동 입력 & 분석" 버튼 사용)
+3. 제출 시 "분석 진행중.." 전체화면 오버레이 표시 확인
+4. 분석 완료 후 대시보드로 이동 확인
+
+**설문 검증 실패 처리 테스트** (Swagger UI에서):
+- `/api/v1/chronic/predict`에 잘못된 데이터 전송 시 422 응답
+- 프론트엔드에서 "서버에 데이터를 전달하는 과정에서 문제가 생겼습니다. 설문을 다시 진행해 주세요" 메시지 + 초기화 확인
+
+**PowerShell에서 직접 API 테스트:**
 ```powershell
-# 테스트 로그인으로 토큰 획득 후 예측 API 호출
 $loginResponse = Invoke-RestMethod -Uri "http://localhost/api/v1/auth/test-login" -Method POST
 $token = $loginResponse.access_token
 
@@ -131,7 +147,7 @@ $prediction = Invoke-RestMethod -Uri "http://localhost/api/v1/chronic/predict" `
 Write-Host ($prediction | ConvertTo-Json -Depth 3)
 ```
 
-### 5. 프론트엔드 재빌드 (UI 수정 시)
+### 6. 프론트엔드 재빌드 (UI 수정 시)
 ```powershell
 cd src
 npm install
@@ -162,9 +178,9 @@ docker compose logs nginx
 ### 포트 충돌
 - 80 포트 사용 중: `docker-compose.yml`에서 `"8080:80"`으로 변경 후 `http://localhost:8080` 접속
 
-### login.html 접근 시 빈 화면
-- `static/index.html`이 존재하는지 확인: `dir static\index.html`
-- 없다면 프론트엔드 빌드 필요: `cd src && npm install && npm run build`
+### 인증 가드로 인해 페이지 접근 불가
+- 정상 동작입니다. 로그인 후 접근하세요.
+- 테스트 목적이라면 위의 **테스트 로그인** 방법을 사용하세요.
 
 ### OAuth 로그인 후 로그인 페이지로 돌아오는 경우
 1. 카카오/네이버 개발자 콘솔에서 Redirect URI가 `http://localhost`로 등록되어 있는지 확인
@@ -172,7 +188,7 @@ docker compose logs nginx
 3. `OAUTH_SETUP_GUIDE.md` 참고
 
 ### 네이버 로그인이 카카오 오류를 반환하는 경우
-- 이전 버전의 버그입니다. 최신 코드에서는 `localStorage.oauth_provider`로 provider를 정확히 판별합니다.
+- `localStorage.oauth_provider`로 provider를 정확히 판별합니다.
 - 브라우저 localStorage를 초기화 후 재시도: `localStorage.clear()`
 
 ---
@@ -194,9 +210,12 @@ docker stats
 ## 🎯 테스트 완료 체크리스트
 - [ ] Docker 서비스 모두 Up 상태 (`docker compose ps`)
 - [ ] `http://localhost` → 로그인 페이지 표시
-- [ ] `http://localhost/login.html` → 로그인 페이지 표시 (동일)
+- [ ] `http://localhost/survey` 직접 접근 → 로그인 페이지로 리다이렉트 (인증 가드)
 - [ ] `http://localhost/api/docs` → Swagger UI 접근
 - [ ] 테스트 로그인 후 서비스 선택 페이지로 이동
+- [ ] 이미 로그인 상태로 `/` 접근 시 안내 메시지 표시
 - [ ] 카카오/네이버 로그인 동작 (OAuth 키 설정 시)
+- [ ] 설문 제출 시 "분석 진행중.." 전체화면 오버레이 표시
 - [ ] 80개 피처 예측 API 응답 (30초 이내)
 - [ ] 4개 질환 예측 결과 반환 (DJ8_pre, DI1_pre, DE1_pre, DI2_pre)
+- [ ] 대시보드에서 예측 결과 확인

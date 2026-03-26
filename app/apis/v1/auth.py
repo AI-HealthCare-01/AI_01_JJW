@@ -94,19 +94,9 @@ async def test_login():
 @auth_router.get("/oauth/urls")
 async def get_oauth_urls():
     oauth_service = OAuthService()
-
-    kakao_url = f"https://kauth.kakao.com/oauth/authorize?client_id={oauth_service.kakao_client_id}&response_type=code"
-
-    naver_url = (
-        f"https://nid.naver.com/oauth2.0/authorize"
-        f"?client_id={oauth_service.naver_client_id}"
-        f"&response_type=code"
-        f"&state={{state}}"
-    )
-
     return ORJSONResponse(
         content={
-            "kakao": kakao_url,
-            "naver": naver_url,
+            "kakao_client_id": oauth_service.kakao_client_id,
+            "naver_client_id": oauth_service.naver_client_id,
         }
     )

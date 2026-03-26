@@ -415,3 +415,22 @@
   - [논리]: 현재 프로젝트 전체 코드(app/, ai_worker/, src/, schemas.py, docker-compose.yml, nginx/)를 분석하여 목표 서비스와의 Gap을 식별
   - [기능]: 현재 구조/시스템 흐름도/서비스 흐름도 정리, 7개 Phase 구현 작업 목록 및 배포 체크리스트 작성
 * **결과 확인:** 가이드라인 파일 생성 완료, 코드 변경 없음
+
+## [2025-07-11 현재] - ✅ 만성질환 예측 AI 서비스 — 전체 결함 수정 완료
+
+* **변경된 파일:** `src/app/App.tsx`, `src/app/components/SurveyPage.tsx`, `app/apis/v1/auth.py`, `app/tests/test_auth.py`, `LOCAL_TEST_GUIDE.md`, `AWS_DEPLOYMENT_GUIDE.md`
+* **삭제된 파일:** `app/apis/v1/auth_routers.py`, `app/apis/v1/user_routers.py`
+* **핵심 변경 사항:**
+  - [논리]: PROJECT_AUDIT_GUIDE.md의 7개 Phase를 순서대로 구현. 인증 가드 미구현이 가장 치명적인 보안 결함이었으므로 최우선 처리.
+  - [기능 - Phase 1]: `ProtectedRoute` 컴포넌트 추가 → `/select-service`, `/survey`, `/dashboard` 미인증 접근 차단
+  - [기능 - Phase 2]: `RootRedirect`에 `useEffect` 추가 → 이미 로그인 시 "이미 카카오/네이버 로그인이 되어있습니다." 토스트 메시지 표시
+  - [기능 - Phase 3]: `handleSurveyError` 헬퍼 함수 추가 → 422/400 응답 시 지정 메시지 + `setAnswers({})` + `setCurrentPage(0)` 처리
+  - [기능 - Phase 4]: `submitting=true` 시 전체화면 오버레이 (`fixed inset-0`) + Loader2 스피너 + "분석 진행중.." 텍스트 표시
+  - [기능 - Phase 5]: `/auth/oauth/urls` 응답을 `{kakao_client_id, naver_client_id}`로 변경 → `AuthContext.tsx`와 인터페이스 일치
+  - [기능 - Phase 6]: 레거시 `auth_routers.py`(JWT signup/login), `user_routers.py` 삭제
+  - [기능 - Phase 7]: `cd src && npm run build` 실행 → `static/` 최신 빌드 반영
+* **결과 확인:**
+  - `ruff check .` → All checks passed!
+  - `ruff format . --check` → 33 files already formatted
+  - `pytest app/tests` → 23 passed (test_get_oauth_urls 응답 구조 변경 반영)
+  - 프론트엔드 빌드 성공 (1385 modules transformed)

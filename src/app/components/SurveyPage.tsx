@@ -18,6 +18,7 @@ import {
   ArrowRight,
   Send,
   Activity,
+  Loader2,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { submitSurvey } from "../services/api";
@@ -80,18 +81,15 @@ export const SurveyPage: React.FC = () => {
   };
 
   const handleAutoFill = () => {
-    // 테스트용 자동 입력 데이터
     const autoFillData: Record<string, string> = {};
     surveyQuestions.forEach((q) => {
       if (q.type === "select" && q.options) {
-        // 랜덤하게 옵션 선택
         const randomOption =
           q.options[
             Math.floor(Math.random() * q.options.length)
           ];
         autoFillData[q.variable] = randomOption.value;
       } else if (q.type === "number") {
-        // 중간값 입력
         const min = q.min || 0;
         const max = q.max || 100;
         const midValue = Math.floor((min + max) / 2);
@@ -102,8 +100,21 @@ export const SurveyPage: React.FC = () => {
     toast.success("테스트 데이터가 자동으로 입력되었습니다!");
   };
 
+  const handleSurveyError = (error: unknown) => {
+    const msg = error instanceof Error ? error.message : "";
+    if (msg.includes("422") || msg.includes("400")) {
+      toast.error(
+        "서버에 데이터를 전달하는 과정에서 문제가 생겼습니다. 설문을 다시 진행해 주세요",
+      );
+      setAnswers({});
+      setCurrentPage(0);
+    } else {
+      toast.error("설문 제출에 실패했습니다. 다시 시도해 주세요.");
+    }
+    setSubmitting(false);
+  };
+
   const handleAutoFillAndSubmit = async () => {
-    // 자동 입력
     const autoFillData: Record<string, string> = {};
     surveyQuestions.forEach((q) => {
       if (q.type === "select" && q.options) {
@@ -120,41 +131,37 @@ export const SurveyPage: React.FC = () => {
       }
     });
     setAnswers(autoFillData);
-
-    // 바로 제출
     setSubmitting(true);
     try {
       const result = await submitSurvey(autoFillData);
       navigate("/dashboard", { state: { result } });
     } catch (error) {
       console.error("설문 제출 오류:", error);
-      toast.error(
-        "설문 제출에 실패했습니다. 다시 시도해 주세요.",
-      );
-      setSubmitting(false);
+      handleSurveyError(error);
     }
   };
 
   const handleSubmit = async () => {
     setSubmitting(true);
-
     try {
-      // API 서비스를 통해 서버에 설문 데이터 전송 및 결과 수신
       const result = await submitSurvey(answers);
-
-      // 성공 시 대시보드로 이동
       navigate("/dashboard", { state: { result } });
     } catch (error) {
       console.error("설문 제출 오류:", error);
-      toast.error(
-        "설문 제출에 실패했습니다. 다시 시도해 주세요.",
-      );
-      setSubmitting(false);
+      handleSurveyError(error);
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
+      {/* 분석 진행중 전체화면 오버레이 */}
+      {submitting && (
+        <div className="fixed inset-0 bg-white/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
+          <Loader2 className="h-12 w-12 animate-spin text-blue-600 mb-4" />
+          <p className="text-xl font-semibold text-gray-700">년석 진행중..</p>
+          <p className="text-sm text-gray-500 mt-2">AI가 건강 데이터를 분석하고 있습니다</p>
+        </div>
+      )}
       {/* Header */}
       <div className="bg-white border-b sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">

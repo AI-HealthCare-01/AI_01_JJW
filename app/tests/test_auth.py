@@ -17,8 +17,8 @@ def test_get_oauth_urls(client):
     response = client.get("/api/v1/auth/oauth/urls")
     assert response.status_code == 200
     data = response.json()
-    assert "kakao" in data
-    assert "naver" in data
+    assert "kakao_client_id" in data
+    assert "naver_client_id" in data
 
 
 def test_oauth_login_unsupported_provider(client):

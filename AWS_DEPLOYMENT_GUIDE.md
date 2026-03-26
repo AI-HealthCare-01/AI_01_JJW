@@ -51,7 +51,18 @@ chmod +x scripts/deployment.sh
 
 ## 🔧 수동 배포 과정
 
-### 1. Docker 이미지 빌드 및 푸시 (로컬)
+### 1. 프론트엔드 빌드 (배포 전 필수)
+```bash
+cd src
+npm install
+npm run build
+# static/ 폴더가 최신 빌드로 갱신됨
+cd ..
+```
+
+> 인증 가드(ProtectedRoute), 이미 로그인 안내 메시지, 분석 진행중 UI가 포함된 최신 빌드를 반드시 포함해야 합니다.
+
+### 2. Docker 이미지 빌드 및 푸시 (로컬)
 ```bash
 docker build -f app/Dockerfile -t your_username/ai-healthcare:app-v1.0.0 .
 docker build -f ai_worker/Dockerfile -t your_username/ai-healthcare:ai-v1.0.0 .
@@ -60,7 +71,7 @@ docker push your_username/ai-healthcare:app-v1.0.0
 docker push your_username/ai-healthcare:ai-v1.0.0
 ```
 
-### 2. EC2 서버 초기 설정
+### 3. EC2 서버 초기 설정
 ```bash
 ssh -i your-key.pem ubuntu@your-ec2-ip
 
@@ -71,16 +82,15 @@ sudo systemctl enable --now docker
 newgrp docker
 ```
 
-### 3. 프로젝트 파일 업로드 (로컬에서 실행)
+### 4. 프로젝트 파일 업로드 (로컬에서 실행)
 ```bash
-# 필요한 파일만 업로드 (이미지는 Docker Hub에서 pull)
 scp -i your-key.pem docker-compose.prod.yml ubuntu@your-ec2-ip:~/ai-healthcare/
 scp -i your-key.pem -r nginx/ ubuntu@your-ec2-ip:~/ai-healthcare/
 scp -i your-key.pem -r envs/ ubuntu@your-ec2-ip:~/ai-healthcare/
 scp -i your-key.pem -r static/ ubuntu@your-ec2-ip:~/ai-healthcare/
 ```
 
-### 4. 환경 변수 설정 (EC2에서)
+### 5. 환경 변수 설정 (EC2에서)
 ```bash
 cd ~/ai-healthcare
 cp envs/example.prod.env envs/.prod.env
@@ -88,7 +98,7 @@ ln -sf envs/.prod.env .env
 nano envs/.prod.env
 ```
 
-### 5. 프로덕션 환경 변수 내용
+### 6. 프로덕션 환경 변수 내용
 ```env
 ENV=prod
 REDIS_HOST=redis
@@ -116,7 +126,7 @@ APP_VERSION=v1.0.0
 AI_WORKER_VERSION=v1.0.0
 ```
 
-### 6. 배포 실행
+### 7. 배포 실행
 ```bash
 docker compose -f docker-compose.prod.yml pull
 docker compose -f docker-compose.prod.yml up -d
@@ -153,6 +163,9 @@ SSL 인증서 발급 후 `docker-compose.prod.yml`의 nginx 볼륨을 변경합�
 ### OAuth Redirect URI 업데이트
 HTTPS 설정 후 카카오/네이버 개발자 콘솔에서 Redirect URI 추가:
 - `https://yourdomain.com`
+
+> **중요**: Redirect URI는 `window.location.origin + '/'` 값과 정확히 일치해야 합니다.
+> 예: `https://yourdomain.com/` (슬래시 포함 여부 확인)
 
 ---
 
@@ -199,6 +212,7 @@ docker compose -f docker-compose.prod.yml restart fastapi
 ---
 
 ## 🎯 배포 완료 체크리스트
+- [ ] `cd src && npm run build` 실행 → `static/` 최신 빌드 확인
 - [ ] EC2 인스턴스 생성 및 보안 그룹 설정 (80, 443, 22 포트)
 - [ ] Docker 설치 완료
 - [ ] 스왑 파일 2GB 생성 (AI Worker 메모리 확보)
@@ -206,7 +220,8 @@ docker compose -f docker-compose.prod.yml restart fastapi
 - [ ] Docker 이미지 빌드 및 Docker Hub 푸시
 - [ ] `docker-compose.prod.yml`로 서비스 실행
 - [ ] `http://your-ec2-ip` → 로그인 페이지 표시 확인
+- [ ] `http://your-ec2-ip/survey` 직접 접근 → 로그인 페이지 리다이렉트 확인 (인증 가드)
 - [ ] 카카오/네이버 OAuth Redirect URI 등록 (`http://your-ec2-ip`)
 - [ ] 도메인 연결 (선택)
-- [ ] SSL 인증서 설정 (HTTPS) 및 Redirect URI 추가 등록
-- [ ] 만성질환 예측 서비스 동작 확인
+- [ ] SSL 인증서 설정 (HTTPS) 및 Redirect URI 추가 등록 (`https://yourdomain.com`)
+- [ ] 만성질환 예측 서비스 동작 확인 (설문 → 분석 진행중 화면 → 대시보드)
