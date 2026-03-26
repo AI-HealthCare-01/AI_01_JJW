@@ -65,11 +65,13 @@ async def predict_chronic_disease(
                 # 원본 설문 데이터를 문자열로 변환
                 survey_str = {k: str(v) for k, v in survey_data.items()}
 
-                return ORJSONResponse(content={
-                    "predictions": predictions,
-                    "guidelines": result_data.get("guidelines"),
-                    "surveyData": survey_str,
-                })
+                return ORJSONResponse(
+                    content={
+                        "predictions": predictions,
+                        "guidelines": result_data.get("guidelines"),
+                        "surveyData": survey_str,
+                    }
+                )
 
             if task_result.get("status") == TaskStatus.FAILED:
                 raise HTTPException(
@@ -161,14 +163,16 @@ async def get_prediction_task_status(task_id: str):
 
 @chronic_router.get("/")
 async def chronic_disease_info():
-    return ORJSONResponse(content={
-        "service": "만성질환 예측 서비스",
-        "diseases": [
-            {"code": "DJ8_pre", "name": "알레르기비염"},
-            {"code": "DI1_pre", "name": "고혈압"},
-            {"code": "DE1_pre", "name": "당뇨병"},
-            {"code": "DI2_pre", "name": "이상지질혈증"},
-        ],
-        "features": 80,
-        "description": "80개 피처를 기반으로 4가지 만성질환 위험도를 예측합니다",
-    })
+    return ORJSONResponse(
+        content={
+            "service": "만성질환 예측 서비스",
+            "diseases": [
+                {"code": "DJ8_pre", "name": "알레르기비염"},
+                {"code": "DI1_pre", "name": "고혈압"},
+                {"code": "DE1_pre", "name": "당뇨병"},
+                {"code": "DI2_pre", "name": "이상지질혈증"},
+            ],
+            "features": 80,
+            "description": "80개 피처를 기반으로 4가지 만성질환 위험도를 예측합니다",
+        }
+    )

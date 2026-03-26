@@ -44,9 +44,7 @@ async def oauth_login(request: OAuthRequest):
 
         access_token = oauth_service.create_access_token(user_info)
 
-        return ORJSONResponse(
-            content=AuthResponse(access_token=access_token, user_info=user_info).model_dump()
-        )
+        return ORJSONResponse(content=AuthResponse(access_token=access_token, user_info=user_info).model_dump())
 
     except HTTPException:
         raise
@@ -97,11 +95,7 @@ async def test_login():
 async def get_oauth_urls():
     oauth_service = OAuthService()
 
-    kakao_url = (
-        f"https://kauth.kakao.com/oauth/authorize"
-        f"?client_id={oauth_service.kakao_client_id}"
-        f"&response_type=code"
-    )
+    kakao_url = f"https://kauth.kakao.com/oauth/authorize?client_id={oauth_service.kakao_client_id}&response_type=code"
 
     naver_url = (
         f"https://nid.naver.com/oauth2.0/authorize"
@@ -110,7 +104,9 @@ async def get_oauth_urls():
         f"&state={{state}}"
     )
 
-    return ORJSONResponse(content={
-        "kakao": kakao_url,
-        "naver": naver_url,
-    })
+    return ORJSONResponse(
+        content={
+            "kakao": kakao_url,
+            "naver": naver_url,
+        }
+    )

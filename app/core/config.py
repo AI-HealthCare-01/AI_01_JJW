@@ -38,7 +38,12 @@ class Config(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
 
     # CORS 설정
-    ALLOWED_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:5173", "http://localhost:8000", "http://localhost"]
+    ALLOWED_ORIGINS: list[str] = [
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://localhost:8000",
+        "http://localhost",
+    ]
 
 
 config = Config()

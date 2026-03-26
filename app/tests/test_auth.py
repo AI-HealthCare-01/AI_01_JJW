@@ -1,5 +1,3 @@
-
-
 def test_test_login(client):
     response = client.post("/api/v1/auth/test-login")
     assert response.status_code == 200

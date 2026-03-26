@@ -84,7 +84,11 @@ class AIWorker:
                     task_data = await self.redis_client.hgetall(f"task:{task_id}")
                     if task_data and task_data.get("data"):
                         try:
-                            data = json.loads(task_data["data"]) if isinstance(task_data["data"], str) else task_data["data"]
+                            data = (
+                                json.loads(task_data["data"])
+                                if isinstance(task_data["data"], str)
+                                else task_data["data"]
+                            )
                         except json.JSONDecodeError:
                             data = task_data["data"]
 
