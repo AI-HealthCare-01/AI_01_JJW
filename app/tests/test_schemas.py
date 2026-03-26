@@ -24,9 +24,8 @@ def test_oauth_provider_values():
 
 def test_user_info_defaults():
     user = UserInfo(user_id="u1", provider=OAuthProvider.KAKAO)
-    assert user.email == ""
-    assert user.name == ""
-    assert user.profile_image is None
+    assert user.user_id == "u1"
+    assert user.provider == OAuthProvider.KAKAO
 
 
 def test_oauth_request_invalid_provider():

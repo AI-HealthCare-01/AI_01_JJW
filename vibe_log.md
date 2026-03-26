@@ -459,3 +459,18 @@
   - [논리]: 서비스 목적은 "인증"이지 개인정보 수집이 아님. `user_id`와 `provider`만으로 인증 및 세션 관리가 충분하므로 `email`, `name`, `profile_image` 필드 전면 제거. 카카오/네이버 동의항목 요구 없이 로그인 가능
   - [기능]: `UserInfo` 스키마 → `user_id`, `provider` 2개 필드만 유지 / JWT payload 동일하게 단순화 / `test-login` API payload 수정 / `DashboardPage` `user.name` → provider 기반 표시로 변경
 * **결과 확인:** `npm run build` 성공 (1385 modules transformed)
+
+## [2025-07-11] - ✅ CI 테스트 실패 2건 수정 완료
+
+* **변경된 파일:** `app/tests/test_schemas.py`, `app/tests/test_auth.py`, `app/apis/v1/auth.py`
+* **핵심 변경 사항:**
+  - [논리 - test_user_info_defaults]: `UserInfo`에서 `email`, `name`, `profile_image` 제거 후 테스트가 해당 필드를 검증하고 있어 `AttributeError` 발생 → 실제 존재하는 `user_id`, `provider` 필드 검증으로 교체
+  - [논리 - test_get_me_with_test_token]: `test-login`의 `provider` 값이 `"test"` 문자열이었는데, `get_current_user`에서 `UserInfo(provider=payload["provider"])` 생성 시 `OAuthProvider` enum 검증 실패 → 401 반환. `provider`를 `OAuthProvider.KAKAO`로 변경하고 `auth.py`에 `OAuthProvider` import 추가
+* **결과 확인:** `pytest app/tests -v` → 23 passed
+
+## [2025-07-10 00:00] - ✅ 프로젝트 전체 구조 분석 및 아키텍처 구성도 생성
+* **변경된 파일:** `PROJECT_ARCHITECTURE.md` (신규 생성)
+* **핵심 변경 사항:**
+  - [논리]: 전체 소스코드(app/, ai_worker/, schemas.py, docker-compose.yml, nginx/, pyproject.toml 등) 정적 분석을 통해 실제 구현 상태를 문서화
+  - [기능]: 시스템 흐름도, API 엔드포인트 목록, 데이터 흐름, 공유 스키마 구조, AI 모델 아키텍처, 컨테이너 구성, CI/CD 파이프라인, 점검 결과(✅/⚠️/❌) 포함한 11개 섹션 구성도 작성
+* **결과 확인:** PROJECT_ARCHITECTURE.md 생성 완료. 주요 이슈(인증 미적용 엔드포인트, JWT Secret 기본값, test-login 노출, guidelines 미구현) 식별 및 문서화.

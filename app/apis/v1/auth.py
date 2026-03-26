@@ -8,7 +8,7 @@ from fastapi.responses import ORJSONResponse
 from app.core.config import config
 from app.dependencies.auth import get_current_user
 from app.services.oauth import OAuthService
-from schemas import AuthResponse, OAuthRequest, UserInfo
+from schemas import AuthResponse, OAuthProvider, OAuthRequest, UserInfo
 
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
@@ -71,7 +71,7 @@ async def logout():
 async def test_login():
     test_user = {
         "user_id": "test_user_123",
-        "provider": "test",
+        "provider": OAuthProvider.KAKAO,
     }
 
     access_token = create_access_token(data={"user_id": test_user["user_id"], "provider": test_user["provider"]})
